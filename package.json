@@ -1,0 +1,25 @@
+{
+  "name": "dockercron",
+  "version": "1.0.0",
+  "description": "register cron jobs in docker labels",
+  "main": "server.js",
+  "dependencies": {
+    "cron": "^1.8.2",
+    "dockerode": "^3.2.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "mocha",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rafipiccolo/dockercron.git"
+  },
+  "author": "Raphael Piccolo",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/rafipiccolo/dockercron/issues"
+  },
+  "homepage": "https://github.com/rafipiccolo/dockercron#readme"
+}

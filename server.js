@@ -1,5 +1,6 @@
 var CronJob = require('cron').CronJob;
 var Docker = require('dockerode');
+var request = require('request');
 var docker = new Docker({socketPath: '/var/run/docker.sock'});
 var dockerExec = require('./dockerExec.js');
 
@@ -90,18 +91,24 @@ function addAllCronsForContainer(id) {
     for (var name in crons[id]) {
         var cron = crons[id][name];
 
-        console.log(cron.name+'@'+id.substr(0, 8)+' install '+cron.command);
+        console.log(cron.name+'@'+id.substr(0, 8)+' install '+cron.schedule+' '+cron.command);
+        
         cron.job = new CronJob(cron.schedule, function() {
-            console.log(cron.name+'@'+id.substr(0, 8)+' exec '+cron.command);
+            verbose(cron.name+'@'+id.substr(0, 8)+' exec '+cron.command);
+        
             dockerExec(id, cron.command, (err, data) => {
+                if (err) return console.error(err);
+
                 var time = new Date();
-                console.log(cron.name+'@'+id.substr(0, 8)+' exitCode: '+data.exitCode+' stdout: '+data.stdout+' stderr: '+data.stderr);
-                console.log(JSON.stringify({
+        
+                console.log(cron.name+'@'+id.substr(0, 8)+' exitCode: '+data.exitCode+' stdout: '+data.stdout.trim()+' stderr: '+data.stderr.trim());
+
+                influxdb({
                     cronname: cron.name,
                     containerId: id,
                     command: cron.command,
                     ...data
-                }));
+                });
             });
         }, null, true, 'Europe/Paris');
 
@@ -120,3 +127,25 @@ function removeAllCronsForContainer(id) {
 }
 
 
+
+
+// VERBOSE output
+function verbose(s) {
+    if (process.env.VERBOSE == 'true' || process.env.VERBOSE == '1')
+        console.log(s);
+}
+
+// INFLUXDB output
+function influxdb(data) {
+    if (!process.env.INFLUXDB) return;
+
+    var body = 'dockercron,cronname='+data.cronname+' ms='+data.ms+',exitCode='+data.exitCode+' '+Date.now();
+    verbose('curl -XPOST '+process.env.INFLUXDB+' --data-binary '+"'"+body+"'");
+    
+    request({
+        method: 'POST',
+        url: process.env.INFLUXDB,
+        body: body,
+        forever: true,
+    });
+}

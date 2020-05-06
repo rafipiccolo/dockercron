@@ -1,8 +1,15 @@
 # Docker Cron
 
 register cron jobs in docker labels.
+~200 lines of code.
 
-ps: jobs specification have second precision (not minutes like old standard crontabs)
+- jobs schedule have second precision (not minutes like old standard crontabs)
+- jobs command are executed in the container itself
+- can export metrics to influxdb for monitoring
+
+exemple of data written to influxdb :
+
+    dockercron,cronname=test ms=246.950014,exitCode=0 1588797072250
 
 # How to use
 
@@ -27,12 +34,22 @@ Create a docker-compose.yml
             build: ./dockercron
             container_name: dockercron
             restart: always
+            volumes:
+                - /var/run/docker.sock:/var/run/docker.sock:ro
+            environment:
+                - "INFLUXDB=http://influxdb:8086/write?db=dockercron"
+                - "VERBOSE=true"
 
 The job called "test" will execute the command "echo hi" every second.
 
 start it
 
     docker-compose up -d
+
+# environment
+
+- INFLUXDB : (optional) the influxdb url used to push data.
+- VERBOSE : (optional) (default 0) set 1 or true to see debug informations
 
 # How it works
 

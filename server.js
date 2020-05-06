@@ -72,7 +72,7 @@ function register(id, labels) {
     for (var label in labels) {
         var value = labels[label];
         
-        var m = label.match(/cron\.([a-z0-9]+)\.(\w+)/i);
+        var m = label.match(/cron\.([a-z0-9]+)\.([a-z\-]+)/i);
         if (m) {
             cronname = m[1];
             option = m[2];
@@ -89,33 +89,34 @@ function register(id, labels) {
 
 function addAllCronsForContainer(id) {
     for (var name in crons[id]) {
-        var cron = crons[id][name];
-
-        console.log(cron.name+'@'+id.substr(0, 8)+' install '+cron.schedule+' '+cron.command);
-        
-        cron.job = new CronJob(cron.schedule, function() {
-            verbose(cron.name+'@'+id.substr(0, 8)+' exec '+cron.command);
-        
-            dockerExec(id, cron.command, (err, data) => {
-                if (err) return console.error(err);
-
-                var time = new Date();
-        
-                console.log(cron.name+'@'+id.substr(0, 8)+' exitCode: '+data.exitCode+' stdout: '+data.stdout.trim()+' stderr: '+data.stderr.trim());
-
-                influxdb({
-                    cronname: cron.name,
-                    containerId: id,
-                    command: cron.command,
-                    ...data
-                });
-            });
-        }, null, true, 'Europe/Paris');
-
-        cron.job.start();
+        startCron(id, crons[id][name]);
     }
 }
 
+function startCron(id, cron){
+    console.log(cron.name+'@'+id.substr(0, 8)+' install '+cron.schedule+' '+cron.command);
+        
+    cron.job = new CronJob(cron.schedule, function() {
+        verbose(cron.name+'@'+id.substr(0, 8)+' exec '+cron.command);
+    
+        dockerExec(id, cron.command, (err, data) => {
+            if (err) return console.error(err);
+
+            var time = new Date();
+    
+            console.log(cron.name+'@'+id.substr(0, 8)+' exitCode: '+data.exitCode+' stdout: '+data.stdout.trim()+' stderr: '+data.stderr.trim());
+
+            influxdb({
+                cronname: cron.name,
+                containerId: id,
+                command: cron.command,
+                ...data
+            });
+        });
+    }, null, true, 'Europe/Paris');
+
+    cron.job.start();
+}
 
 function removeAllCronsForContainer(id) {
     for (var name in crons[id]) {

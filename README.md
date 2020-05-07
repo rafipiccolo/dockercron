@@ -1,17 +1,18 @@
 # Docker Cron
 
 register cron jobs in docker labels.
-~200 lines of code.
-
 - jobs schedule have second precision (not minutes like old standard crontabs)
 - jobs command are executed in the container itself
 - can export metrics to influxdb for monitoring
 
-exemple of data written to influxdb :
+exemple:
 
-    dockercron,cronname=test ms=246.950014,exitCode=0 1588797072250
+    - "cron.test.schedule=* * * * * *"
+    - "cron.test.command=echo hi"
+    - "cron.test.no-overlap=true"
 
-# How to use
+
+# Install
 
 Execute this line to download dockercron
 
@@ -29,6 +30,7 @@ Create a docker-compose.yml
             labels:
                 - "cron.test.schedule=* * * * * *"
                 - "cron.test.command=echo hi"
+                - "cron.test.no-overlap=true"
 
         dockercron:
             build: ./dockercron
@@ -46,10 +48,47 @@ start it
 
     docker-compose up -d
 
-# environment
+# Update
 
-- INFLUXDB : (optional) the influxdb url used to push data.
-- VERBOSE : (optional) (default 0) set 1 or true to see debug informations
+    cd dockercron
+    git pull
+    cd ..
+    docker-compose build dockercron
+    docker-compose up -d dockercron
+
+# Config
+
+**environment** variables available :
+
+- INFLUXDB : (optional)
+The influxdb url used to push data.
+exemple of data written to influxdb :
+    dockercron,cronname=test ms=246.950014,exitCode=0 1588797072250
+
+- VERBOSE : (optional) (default 0)
+set 1 or true to see debug informations
+
+**labels** format:
+
+    - "cron.{cronname}.{option}={value}"
+
+command
+
+    - "cron.test.command=echo hi" :
+    # to execute the cron command we use sh -c command
+    # the command is executed on the docker container itself
+    # so "sh" and the other binaries you want to use must exist in the container.
+
+schedule
+
+    - "cron.test.schedule=* * * * * *"
+    # jobs schedule have second precision
+
+no-overlap
+
+    - "cron.test.no-overlap=true"
+    # prevent a job to start again if already running
+
 
 # How it works
 
@@ -60,8 +99,6 @@ In parralel we poll docker events :
 - everytime a container is "die" / "stop" => remove all cronjobs of this container
 - everytime a container is "start" => remove and then register all cronjobs of this container
 
-to execute the cron command we use sh -c command
-the command is executed on the docker container itself so "sh", and the other binaries you want to use, must exist in the container.
 
 This package is used to parse and execute cron jobs : https://www.npmjs.com/package/cron
 This package is used to communicate with docker : https://www.npmjs.com/package/dockerode

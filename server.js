@@ -69,6 +69,7 @@ function register(id, labels) {
     removeAllCronsForContainer(id);
     
     // parse all crons of this container
+    var nb = 0;
     for (var label in labels) {
         var value = labels[label];
         
@@ -80,8 +81,11 @@ function register(id, labels) {
             crons[id][cronname] = crons[id][cronname] || {};
             crons[id][cronname][option] = value;
             crons[id][cronname].name = cronname;
+            if (option == 'command') nb++;
         }
     }
+
+    verbose(id.substr(0, 8)+' found '+nb+' cronjobs');
 
     // start all detected crons
     addAllCronsForContainer(id);
@@ -89,29 +93,40 @@ function register(id, labels) {
 
 function addAllCronsForContainer(id) {
     for (var name in crons[id]) {
-        startCron(id, crons[id][name]);
+        createCron(id, crons[id][name]);
     }
 }
 
-function startCron(id, cron){
+function createCron(id, cron){
     console.log(cron.name+'@'+id.substr(0, 8)+' install '+cron.schedule+' '+cron.command);
         
     cron.job = new CronJob(cron.schedule, function() {
         verbose(cron.name+'@'+id.substr(0, 8)+' exec '+cron.command);
-    
+
+        // check if already running for no overlap mode
+        if ((cron['no-overlap'] == 'true' || cron['no-overlap'] == '1') && cron.running) {
+            return verbose(cron.name+'@'+id.substr(0, 8)+' skip already running');
+        }
+        cron.running = 1;
+        
+        // execute
         dockerExec(id, cron.command, (err, data) => {
-            if (err) return console.error(err);
-
+            if (err) {
+                cron.running = 0;
+                return console.error(err);
+            }
+            
             var time = new Date();
-    
+            
             console.log(cron.name+'@'+id.substr(0, 8)+' exitCode: '+data.exitCode+' stdout: '+data.stdout.trim()+' stderr: '+data.stderr.trim());
-
+            
             influxdb({
                 cronname: cron.name,
                 containerId: id,
                 command: cron.command,
                 ...data
             });
+            cron.running = 0;
         });
     }, null, true, 'Europe/Paris');
 

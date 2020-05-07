@@ -58,17 +58,19 @@ start it
 
 # Config
 
-**environment** variables available :
+**environment** variables :
 
 - INFLUXDB : (optional)
 The influxdb url used to push data.
+exemple of url :
+    http://influxdb:8086/write?db=dockercron
 exemple of data written to influxdb :
     dockercron,cronname=test ms=246.950014,exitCode=0 1588797072250
 
 - VERBOSE : (optional) (default 0)
 set 1 or true to see debug informations
 
-**labels** format:
+**labels** format :
 
     - "cron.{cronname}.{option}={value}"
 
@@ -98,7 +100,6 @@ and then we register the cronjobs we found
 In parralel we poll docker events :
 - everytime a container is "die" / "stop" => remove all cronjobs of this container
 - everytime a container is "start" => remove and then register all cronjobs of this container
-
 
 This package is used to parse and execute cron jobs : https://www.npmjs.com/package/cron
 This package is used to communicate with docker : https://www.npmjs.com/package/dockerode

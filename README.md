@@ -65,7 +65,7 @@ The influxdb url used to push data.
 exemple of url :
     http://influxdb:8086/write?db=dockercron
 exemple of data written to influxdb :
-    dockercron,cronname=test ms=246.950014,exitCode=0 1588797072250
+    dockercron,cronname=test ms=246.950014,exitCode=0 1588797072250000000
 
 - VERBOSE : (optional) (default 0)
 set 1 or true to see debug informations

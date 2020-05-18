@@ -163,5 +163,10 @@ function influxdb(data) {
         url: process.env.INFLUXDB,
         body: body,
         forever: true,
+    }, function(err, response, body) {
+        if (err) return console.error('Influxdb error', err);
+        if (parseInt(response.statusCode / 100) != 2) return console.error(new Error('Influxdb status code is '+response.statusCode));
+        
+        verbose('INFLUXDB OK');
     });
 }

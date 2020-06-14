@@ -75,8 +75,8 @@ function register(id, labels) {
         
         var m = label.match(/cron\.([a-z0-9]+)\.([a-z\-]+)/i);
         if (m) {
-            cronname = m[1];
-            option = m[2];
+            var cronname = m[1];
+            var option = m[2];
             crons[id] = crons[id] || {};
             crons[id][cronname] = crons[id][cronname] || {};
             crons[id][cronname][option] = value;

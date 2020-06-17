@@ -28,8 +28,6 @@ docker.getEvents({}, function (err, stream) {
     lineStream.on('data', function (chunk) {
         var data = JSON.parse(chunk);
 
-        console.log('found', data)
-        return ;
         // console.log('EVENT', data.id, data.Type, data.Action);
         // console.log('EVENTDETAIL', JSON.stringify(data));
         if (data.Type == 'container') {

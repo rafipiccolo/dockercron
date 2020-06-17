@@ -3,7 +3,7 @@ var Docker = require('dockerode');
 var request = require('request');
 var docker = new Docker({socketPath: '/var/run/docker.sock'});
 var dockerExec = require('./dockerExec.js');
-
+var LineStream = require('byline').LineStream;
 
 // all crons
 var crons = {};
@@ -23,8 +23,10 @@ docker.listContainers(function(err, containers) {
 docker.getEvents({}, function (err, stream) {
     if(err) throw err;
     
-    stream.on('data', function (chunk) {
-        var data = JSON.parse(chunk.toString('utf8'));
+    var lineStream = new LineStream({encoding: 'utf8'});
+    stream.pipe(lineStream);
+    lineStream.on('data', function (chunk) {
+        var data = JSON.parse(chunk);
 
         // console.log('EVENT', data.id, data.Type, data.Action);
         // console.log('EVENTDETAIL', JSON.stringify(data));
@@ -75,8 +77,8 @@ function register(id, labels) {
         
         var m = label.match(/cron\.([a-z0-9]+)\.([a-z\-]+)/i);
         if (m) {
-            cronname = m[1];
-            option = m[2];
+            var cronname = m[1];
+            var option = m[2];
             crons[id] = crons[id] || {};
             crons[id][cronname] = crons[id][cronname] || {};
             crons[id][cronname][option] = value;

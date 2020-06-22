@@ -61,14 +61,19 @@ start it
 **environment** variables :
 
 - INFLUXDB : (optional)
-The influxdb url used to push data.
-exemple of url :
-    http://influxdb:8086/write?db=dockercron
-exemple of data written to influxdb :
-    dockercron,cronname=test ms=246.950014,exitCode=0 1588797072250000000
+
+    The influxdb url used to push data.
+    exemple of url :
+        http://influxdb:8086/write?db=dockercron
+    exemple of data written to influxdb :
+        dockercron,cronname=test ms=246.950014,exitCode=0 1588797072250000000
 
 - VERBOSE : (optional) (default 0)
-set 1 or true to see debug informations
+
+    set 1 or true to see debug informations
+
+- HOSTNAME : the hostname tag pushed to influxdb
+
 
 **labels** format :
 

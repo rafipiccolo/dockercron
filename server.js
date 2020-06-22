@@ -157,7 +157,7 @@ function verbose(s) {
 function influxdb(data) {
     if (!process.env.INFLUXDB) return;
 
-    var body = 'dockercron,cronname='+data.cronname+' ms='+data.ms+',exitCode='+data.exitCode+' '+(Date.now()*1000000);
+    var body = 'dockercron,host='+process.env.HOSTNAME+',cronname='+data.cronname+' ms='+data.ms+',exitCode='+data.exitCode+' '+(Date.now()*1000000);
     verbose('curl -XPOST '+process.env.INFLUXDB+' --data-binary '+"'"+body+"'");
     
     request({

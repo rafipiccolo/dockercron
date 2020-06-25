@@ -2,7 +2,13 @@ var Docker = require('dockerode');
 var Stream = require('stream');
 var docker = new Docker({socketPath: '/var/run/docker.sock'});
 
-module.exports = function dockerExec(id, command, callback) {
+module.exports = function dockerExec(id, command, options, callback) {
+    var called = false;
+    function safecallback(...a) {
+        if (called) return;
+        called = 1;
+        callback(...a);
+    }
     var hrstart = process.hrtime()
 
     // create an exec on the container
@@ -15,11 +21,29 @@ module.exports = function dockerExec(id, command, callback) {
         "Tty": false,
         "Env": []
     }, function(err, exec) {
-        if (err) return callback(err);
+        if (err) return safecallback(err);
 
         // start to execute
         exec.start(function (err, stream) {
-            if (err) return callback(err);
+            if (err) return safecallback(err);
+
+            if (options.timeout) {
+                setTimeout(() => {
+                    exec.inspect((err, data) => {
+                        if (err) return safecallback(err);
+
+                        dockerExec(id, 'kill ' + data.Pid, {}, () => {
+                            if (err) return safecallback(err);
+
+                            var err = new Error('timeout');
+                            err.command = command;
+                            err.stdout = buffer_stdout;
+                            err.stderr = buffer_stderr;
+                            safecallback(err);
+                        });
+                    });
+                }, options.timeout*1000);
+            }
 
             // get single streams from the big stream
             var stdout = new Stream.PassThrough();
@@ -41,9 +65,9 @@ module.exports = function dockerExec(id, command, callback) {
                 var hrend = process.hrtime(hrstart)
 
                 exec.inspect((err, data) => {
-                    if (err) return callback(err);
+                    if (err) return safecallback(err);
 
-                    callback(null, {
+                    safecallback(null, {
                         ms: hrend[0]*1000 + hrend[1] / 1000000,
                         exitCode: data.ExitCode,
                         stdout: buffer_stdout,

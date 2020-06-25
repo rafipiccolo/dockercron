@@ -112,10 +112,20 @@ function createCron(id, cron){
         cron.running = 1;
         
         // execute
-        dockerExec(id, cron.command, (err, data) => {
+        dockerExec(id, cron.command, {timeout: cron.timeout}, (err, data) => {
             if (err) {
                 cron.running = 0;
-                return console.error(err);
+                if (err.message == 'timeout')
+                    console.error(cron.name + '@' + id.substr(0, 8) + ' timeout ' + cron.timeout);
+                console.error(err);
+                influxdb({
+                    cronname: cron.name,
+                    containerId: id,
+                    command: cron.command,
+                    exitCode: -1,
+                    ms: 0,
+                });
+                return;
             }
             
             var time = new Date();

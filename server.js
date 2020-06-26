@@ -112,7 +112,7 @@ function createCron(id, cron){
         cron.running = 1;
         
         // execute
-        dockerExec(id, cron.command, {timeout: cron.timeout}, (err, data) => {
+        dockerExec(id, cron.command, {user: cron.user, timeout: cron.timeout}, (err, data) => {
             if (err) {
                 cron.running = 0;
                 if (err.message == 'timeout')
@@ -123,6 +123,7 @@ function createCron(id, cron){
                     containerId: id,
                     command: cron.command,
                     exitCode: -1,
+                    timeout: 1,
                     ms: 0,
                 });
                 return;

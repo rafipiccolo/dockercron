@@ -11,6 +11,7 @@ exemple:
     - "cron.test.command=echo hi"
     - "cron.test.no-overlap=true"
     - "cron.test.timeout=5"
+    - "cron.test.user=www-data"
 
 
 # Install
@@ -31,8 +32,6 @@ Create a docker-compose.yml
             labels:
                 - "cron.test.schedule=* * * * * *"
                 - "cron.test.command=echo hi"
-                - "cron.test.no-overlap=true"
-                - "cron.test.timeout=5"
 
         dockercron:
             build: ./dockercron
@@ -102,6 +101,11 @@ timeout
 
     - "cron.test.tiemout=true"
     # kill the job if timeout is reached
+
+user
+    - "cron.test.user=www-data"
+    # run the job as this user, inside the container (default root)
+
 
 
 # How it works

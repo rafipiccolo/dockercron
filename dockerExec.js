@@ -13,14 +13,17 @@ module.exports = function dockerExec(id, command, options, callback) {
 
     // create an exec on the container
     var container = docker.getContainer(id);
-    container.exec({
+    var params = {
         "Cmd": ["sh", "-c", command],
         "AttachStdin": false,
         "AttachStdout": true,
         "AttachStderr": true,
         "Tty": false,
         "Env": []
-    }, function(err, exec) {
+    };
+    if (options.user)
+        params.User = options.user;
+    container.exec(params, function(err, exec) {
         if (err) return safecallback(err);
 
         // start to execute

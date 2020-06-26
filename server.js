@@ -101,7 +101,7 @@ function addAllCronsForContainer(id) {
 
 function createCron(id, cron){
     console.log(cron.name+'@'+id.substr(0, 8)+' install '+cron.schedule+' '+cron.command);
-        
+
     cron.job = new CronJob(cron.schedule, function() {
         verbose(cron.name+'@'+id.substr(0, 8)+' exec '+cron.command);
 
@@ -117,8 +117,6 @@ function createCron(id, cron){
                 cron.running = 0;
                 return console.error(err);
             }
-            
-            var time = new Date();
             
             console.log(cron.name+'@'+id.substr(0, 8)+' exitCode: '+data.exitCode+' stdout: '+data.stdout.trim()+' stderr: '+data.stderr.trim());
             

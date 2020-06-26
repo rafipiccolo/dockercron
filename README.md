@@ -10,6 +10,7 @@ exemple:
     - "cron.test.schedule=* * * * * *"
     - "cron.test.command=echo hi"
     - "cron.test.no-overlap=true"
+    - "cron.test.timeout=5"
 
 
 # Install
@@ -31,6 +32,7 @@ Create a docker-compose.yml
                 - "cron.test.schedule=* * * * * *"
                 - "cron.test.command=echo hi"
                 - "cron.test.no-overlap=true"
+                - "cron.test.timeout=5"
 
         dockercron:
             build: ./dockercron
@@ -95,6 +97,11 @@ no-overlap
 
     - "cron.test.no-overlap=true"
     # prevent a job to start again if already running
+
+timeout
+
+    - "cron.test.tiemout=true"
+    # kill the job if timeout is reached
 
 
 # How it works

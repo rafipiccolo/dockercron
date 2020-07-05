@@ -2,7 +2,9 @@ var Docker = require('dockerode');
 var Stream = require('stream');
 var docker = new Docker({socketPath: '/var/run/docker.sock'});
 
-module.exports = function dockerExec(id, command, options, callback) {
+module.exports = function dockerExec(id, options, callback) {
+    options.runningdata = options.runningdata || {};
+
     var called = false;
     function safecallback(...a) {
         if (called) return;
@@ -10,11 +12,12 @@ module.exports = function dockerExec(id, command, options, callback) {
         callback(...a);
     }
     var hrstart = process.hrtime()
+    options.runningdata.start = new Date();
 
     // create an exec on the container
     var container = docker.getContainer(id);
     var params = {
-        "Cmd": ["sh", "-c", command],
+        "Cmd": ["sh", "-c", options.command],
         "AttachStdin": false,
         "AttachStdout": true,
         "AttachStderr": true,
@@ -39,7 +42,7 @@ module.exports = function dockerExec(id, command, options, callback) {
                             if (err) return safecallback(err);
 
                             var err = new Error('timeout');
-                            err.command = command;
+                            err.command = options.command;
                             err.stdout = buffer_stdout;
                             err.stderr = buffer_stderr;
                             safecallback(err);
@@ -57,15 +60,18 @@ module.exports = function dockerExec(id, command, options, callback) {
             stdout.on('data', function(chunk) {
                 buffer_stdout += chunk;
             });
-            
+            options.runningdata.stdout = buffer_stdout;
+
             var buffer_stderr = '';
             stderr.on('data', function(chunk) {
                 buffer_stderr += chunk;
             });
+            options.runningdata.stderr = buffer_stderr;
 
             // when all is done we get exec results
             stream.on('end', () => {
                 var hrend = process.hrtime(hrstart)
+                options.runningdata.end = new Date();
 
                 exec.inspect((err, data) => {
                     if (err) return safecallback(err);

@@ -42,6 +42,14 @@ Create a docker-compose.yml
             environment:
                 - "INFLUXDB=http://influxdb:8086/write?db=dockercron"
                 - "VERBOSE=true"
+            labels:
+                - traefik.enable=true
+                - traefik.http.routers.dockercron.rule=Host(`dockercron.${DOMAIN}`)
+                - traefik.http.routers.dockercron.tls.certresolver=le
+                - traefik.http.routers.dockercron.entrypoints=websecure
+                - traefik.http.routers.dockercron.middlewares=securityheaders,admin
+            healthcheck:
+                test: ['CMD', 'curl', '-f', 'http://localhost:3000/health']
 
 The job called "test" will execute the command "echo hi" every second.
 
@@ -99,14 +107,21 @@ no-overlap
 
 timeout
 
-    - "cron.test.tiemout=true"
-    # kill the job if timeout is reached
+    - "cron.test.timeout=5"
+    # kill the job if timeout is reached (seconds)
 
 user
     - "cron.test.user=www-data"
     # run the job as this user, inside the container (default root)
 
 
+# available routes
+
+- /
+- /state
+- /state/:id
+- /state/:id/:name
+- /health
 
 # How it works
 

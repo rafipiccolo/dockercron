@@ -1,9 +1,31 @@
 var CronJob = require('cron').CronJob;
 var Docker = require('dockerode');
+var express = require('express');
 var request = require('request');
 var docker = new Docker({socketPath: '/var/run/docker.sock'});
 var dockerExec = require('./dockerExec.js');
 var LineStream = require('byline').LineStream;
+
+
+
+const app = express()
+const port = process.env.PORT || 3000;
+
+app.get('/', (req, res) => res.send('Hello World!'))
+app.get('/state', (req, res) => {
+    return res.send(require('util').inspect(crons));
+})
+app.get('/state/:id', (req, res) => {
+    return res.send(require('util').inspect(crons[req.params.id]));
+})
+app.get('/state/:id/:name', (req, res) => {
+    return res.send(require('util').inspect(crons[req.params.id][req.params.name]));
+})
+app.get('/health', (req, res) => res.send('ok'))
+
+app.listen(port, () => console.log(`Example app listening at http://localhost:${port}`))
+
+
 
 // all crons
 var crons = {};
@@ -75,7 +97,7 @@ function register(id, labels) {
     for (var label in labels) {
         var value = labels[label];
         
-        var m = label.match(/cron\.([a-z0-9]+)\.([a-z\-]+)/i);
+        var m = label.match(/^cron\.([a-z0-9]+)\.([a-z\-]+)$/i);
         if (m) {
             var cronname = m[1];
             var option = m[2];
@@ -112,7 +134,9 @@ function createCron(id, cron){
         cron.running = 1;
         
         // execute
-        dockerExec(id, cron.command, {user: cron.user, timeout: cron.timeout}, (err, data) => {
+        dockerExec(id, cron, (err, data) => {
+            cron.runningdata = {...cron.runningdata, ...data};
+
             if (err) {
                 cron.running = 0;
                 if (err.message == 'timeout')

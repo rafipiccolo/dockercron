@@ -3,6 +3,7 @@ var Docker = require('dockerode');
 var express = require('express');
 var request = require('request');
 var docker = new Docker({socketPath: '/var/run/docker.sock'});
+var influxdb = require('./influxdb');
 var dockerExec = require('./dockerExec.js');
 var LineStream = require('byline').LineStream;
 
@@ -134,7 +135,7 @@ function createCron(id, cron){
         cron.running = 1;
         
         // execute
-        dockerExec(id, cron, (err, data) => {
+        dockerExec(id, cron, async (err, data) => {
             cron.runningdata = {...cron.runningdata, ...data};
 
             if (err) {
@@ -142,25 +143,13 @@ function createCron(id, cron){
                 if (err.message == 'timeout')
                     console.error(cron.name + '@' + id.substr(0, 8) + ' timeout ' + cron.timeout);
                 console.error(err);
-                influxdb({
-                    cronname: cron.name,
-                    containerId: id,
-                    command: cron.command,
-                    exitCode: -1,
-                    timeout: 1,
-                    ms: 0,
-                });
+                influxdb.insert('dockercron', {host: process.env.HOSTNAME, cronname: cron.name }, { exitCode: -1, timeout: 1, ms: 0});
                 return;
             }
             
             console.log(cron.name+'@'+id.substr(0, 8)+' exitCode: '+data.exitCode+' stdout: '+data.stdout.trim()+' stderr: '+data.stderr.trim());
-            
-            influxdb({
-                cronname: cron.name,
-                containerId: id,
-                command: cron.command,
-                ...data
-            });
+
+            influxdb.insert('dockercron', { host: process.env.HOSTNAME, cronname: cron.name},  {exitCode: data.exitCode, timeout: data.timeout, ms: data.ms });
             cron.running = 0;
         });
     }, null, true, 'Europe/Paris');
@@ -184,24 +173,4 @@ function removeAllCronsForContainer(id) {
 function verbose(s) {
     if (process.env.VERBOSE == 'true' || process.env.VERBOSE == '1')
         console.log(s);
-}
-
-// INFLUXDB output
-function influxdb(data) {
-    if (!process.env.INFLUXDB) return;
-
-    var body = 'dockercron,host='+process.env.HOSTNAME+',cronname='+data.cronname+' ms='+data.ms+',exitCode='+data.exitCode+' '+(Date.now()*1000000);
-    verbose('curl -XPOST '+process.env.INFLUXDB+' --data-binary '+"'"+body+"'");
-    
-    request({
-        method: 'POST',
-        url: process.env.INFLUXDB,
-        body: body,
-        forever: true,
-    }, function(err, response, body) {
-        if (err) return console.error('Influxdb error', err);
-        if (parseInt(response.statusCode / 100) != 2) return console.error('influxdb statuscode error', { statusCode: response.statusCode, body });
-        
-        verbose('INFLUXDB OK');
-    });
 }

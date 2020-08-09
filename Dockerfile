@@ -2,6 +2,8 @@ FROM node
 
 WORKDIR /usr/app
 
+RUN npm install -g forever
+
 COPY package*.json ./
 RUN npm install
 COPY . .

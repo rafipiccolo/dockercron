@@ -4,7 +4,8 @@ var docker = new Docker({socketPath: '/var/run/docker.sock'});
 
 module.exports = function dockerExec(id, options, callback) {
     options.runningdata = options.runningdata || {};
-
+    options.runningdata.start = new Date();
+    
     var called = false;
     function safecallback(...a) {
         if (called) return;
@@ -12,7 +13,6 @@ module.exports = function dockerExec(id, options, callback) {
         callback(...a);
     }
     var hrstart = process.hrtime()
-    options.runningdata.start = new Date();
 
     // create an exec on the container
     var container = docker.getContainer(id);

@@ -6,7 +6,8 @@ module.exports = function dockerExec(id, options, callback) {
     options.runningdata = options.runningdata || {};
     options.runningdata.start = new Date();
     
-    var timeout = 0;
+    var timeouted = 0;
+    var timeout = null;
 
     var called = false;
     function safecallback(...a) {
@@ -36,14 +37,14 @@ module.exports = function dockerExec(id, options, callback) {
             if (err) return safecallback(err);
 
             if (options.timeout) {
-                setTimeout(() => {
+                timeout = setTimeout(() => {
                     exec.inspect((err, data) => {
                         // if (err) return safecallback(err);
-                        if (err) console.error('cant inspect exec on '+ id);
+                        if (err) return console.error('cant inspect exec on '+ id);
 
-                        timeout = 1;
+                        timeouted = 1;
                         dockerExec(id, {command: 'kill ' + data.Pid}, () => {
-                            if (err) console.error('cant kill process ' + data.Pid);
+                            if (err) return console.error('cant kill process ' + data.Pid);
                         });
                     });
                 }, options.timeout*1000);
@@ -71,6 +72,8 @@ module.exports = function dockerExec(id, options, callback) {
                 var hrend = process.hrtime(hrstart)
                 options.runningdata.end = new Date();
 
+                clearTimeout(timeout);
+
                 exec.inspect((err, data) => {
                     if (err) return safecallback(err);
 
@@ -79,7 +82,7 @@ module.exports = function dockerExec(id, options, callback) {
                         stderr: buffer_stderr,
                         exitCode: data.ExitCode,
                         ms: hrend[0]*1000 + hrend[1] / 1000000,
-                        timeout: timeout,
+                        timeout: timeouted,
                     });
                 });
             });

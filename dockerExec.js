@@ -38,14 +38,15 @@ module.exports = function dockerExec(id, options, callback) {
                     exec.inspect((err, data) => {
                         if (err) return safecallback(err);
 
-                        dockerExec(id, 'kill ' + data.Pid, {}, () => {
+                        dockerExec(id, {command: 'kill ' + data.Pid}, () => {
                             if (err) return safecallback(err);
 
                             var err = new Error('timeout');
                             err.command = options.command;
-                            err.stdout = buffer_stdout;
-                            err.stderr = buffer_stderr;
-                            safecallback(err);
+                            safecallback(err, {
+                                stdout: buffer_stdout,
+                                stderr: buffer_stderr,
+                            });
                         });
                     });
                 }, options.timeout*1000);

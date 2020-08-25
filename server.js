@@ -142,9 +142,9 @@ function createCron(id, cron){
                 cron.running = 0;
                 if (err.message == 'timeout')
                     console.error(cron.name + '@' + id.substr(0, 8) + ' timeout ' + cron.timeout);
-                console.error(err);
+                else
+                    console.error(err);
                 influxdb.insert('dockercron', {host: process.env.HOSTNAME, cronname: cron.name }, { exitCode: -1, timeout: 1, ms: 0});
-                return;
             }
             
             console.log(cron.name+'@'+id.substr(0, 8)+' exitCode: '+data.exitCode+' stdout: '+data.stdout.trim()+' stderr: '+data.stderr.trim());

@@ -140,18 +140,12 @@ function createCron(id, cron){
 
             if (err) {
                 cron.running = 0;
-                if (err.message == 'timeout')
-                    console.error(cron.name + '@' + id.substr(0, 8) + ' timeout ' + cron.timeout);
-                else
-                    console.error(err);
-                data.exitCode = -1;
-                data.timeout = 1;
-                data.ms = 0;
+                console.error(err);
             }
-            
-            console.log(cron.name+'@'+id.substr(0, 8)+' exitCode: '+data.exitCode+' stdout: '+data.stdout.trim()+' stderr: '+data.stderr.trim());
 
-            influxdb.insert('dockercron', { host: process.env.HOSTNAME, cronname: cron.name},  {exitCode: data.exitCode, timeout: data.timeout, ms: data.ms });
+            console.log(cron.name+'@'+id.substr(0, 8)+' ms: '+data.ms+' timeout:'+(data.timeout?1:0)+' exitCode: '+data.exitCode+' stdout: '+data.stdout.trim()+' stderr: '+data.stderr.trim());
+
+            influxdb.insert('dockercron', { host: process.env.HOSTNAME, cronname: cron.name}, {exitCode: data.exitCode, timeout: data.timeout, ms: data.ms });
             cron.running = 0;
         });
     }, null, true, 'Europe/Paris');

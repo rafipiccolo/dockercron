@@ -2,7 +2,7 @@ FROM node
 
 WORKDIR /usr/app
 
-RUN npm install -g forever
+RUN npm install -g nodemon
 
 COPY package*.json ./
 RUN npm install

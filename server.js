@@ -1,12 +1,12 @@
 var CronJob = require('cron').CronJob;
 var Docker = require('dockerode');
 var express = require('express');
-var request = require('request');
+var moment = require('moment');
 var docker = new Docker({socketPath: '/var/run/docker.sock'});
 var influxdb = require('./influxdb');
 var dockerExec = require('./dockerExec.js');
 var LineStream = require('byline').LineStream;
-
+const sendMail = require('./lib/sendMail');
 
 
 const app = express()

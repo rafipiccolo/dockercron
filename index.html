@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Docker crons</title>
+    <script src="https://unpkg.com/react@16/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.27.0/moment-with-locales.min.js"></script>
+    <style>
+        body {
+            background-color: #222;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        function Liste() {
+            var [crons, setCrons] = React.useState([]);
+            var [error, setError] = React.useState(0);
+
+            React.useEffect(() => {
+                (async () => {
+                    const response = await fetch('/data?error=' + error);
+                    const data = await response.json();
+
+                    setCrons(data);
+                })()
+            }, [error]);
+
+            return <>
+                <label style={{ color: 'white' }}><input type="checkbox" checked={error} onChange={() => { setError(error ? 0 : 1) }} /> Voir que les erreurs</label>
+
+                <table className="table table-dark table-hover table-sm">
+                    <tbody>
+                        <tr>
+                            <th style={{ width: 100 }}>timestamp</th>
+                            <th style={{ width: 100 }}>cronname</th>
+                            <th style={{ width: 100 }}>exitCode</th>
+                            <th style={{ width: 100 }}>ms</th>
+                            <th style={{ width: 100 }}>timeout</th>
+                        </tr>
+                        {crons.map(cron => <tr key={Math.random() + ''}>
+                            <td>{moment(cron.time).format('YYYY-MM-DD HH:mm:ss.SSS')}</td>
+                            <td>{cron.cronname}</td>
+                            <td>{
+                                cron.exitCode != 0
+                                    ?
+                                    <span style={{ color: 'red', fontSize: '20px' }}>{cron.exitCode}</span>
+                                    :
+                                    <span style={{ color: 'green', fontSize: '20px' }}>{cron.exitCode}</span>
+                            }</td>
+                            <td>{cron.ms}</td>
+                            <td>
+                                {cron.timeout ? 'timeout' : ''}
+                            </td>
+                        </tr>)}
+                    </tbody>
+                </table>
+            </>
+        }
+
+        ReactDOM.render(
+            <>
+                <Liste />
+            </>,
+            document.getElementById('root')
+        );
+
+    </script>
+</body>
+
+</html>

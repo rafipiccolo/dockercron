@@ -12,16 +12,89 @@ var LineStream = require('byline').LineStream;
 const app = express()
 const port = process.env.PORT || 3000;
 
-app.get('/', (req, res) => res.send('Hello World!'))
+JSON.safeStringify = (obj, indent = 2) => {
+    let cache = [];
+    const retVal = JSON.stringify(
+        obj,
+        (key, value) =>
+            typeof value === "object" && value !== null
+                ? cache.includes(value)
+                    ? undefined // Duplicate reference found, discard key
+                    : cache.push(value) && value // Store value in our collection
+                : value,
+        indent
+    );
+    cache = null;
+    return retVal;
+};
+
+app.get('/', async (req, res, next) => {
+    res.sendFile(__dirname + '/index.html')
+});
+
 app.get('/state', (req, res) => {
-    return res.send(require('util').inspect(crons));
+    return res.send(JSON.safeStringify(crons));
 })
+
 app.get('/state/:id', (req, res) => {
     return res.send(require('util').inspect(crons[req.params.id]));
 })
+
 app.get('/state/:id/:name', (req, res) => {
     return res.send(require('util').inspect(crons[req.params.id][req.params.name]));
 })
+
+app.get('/cron/alert', async (req, res, next) => {
+    try {
+        var data = await influxdb.query(`select * from dockercron where exitCode != 0 order by time desc limit 10`);
+
+        res.send(data);
+    } catch (err) {
+        next(err);
+    }
+})
+
+app.get('/data', async (req, res, next) => {
+    try {
+        var sql = '';
+
+        var wheres = [];
+        if (parseInt(req.query.error))
+            wheres.push(`"exitCode" != 0`);
+        wheres.push(`"host" = '${process.env.HOSTNAME}'`)
+        sql = `select * from dockercron where ${wheres.join(' and ')} order by time desc limit 1000`;
+        var data = await influxdb.query(sql);
+        res.send(data);
+    } catch (err) {
+        next(err);
+    }
+})
+
+app.get('/cron/alert', async (req, res, next) => {
+    try {
+        var errors = await influxdb.query(`select * from dockercron where "host" = '${process.env.HOSTNAME}' and exitCode != 0 and time > now() - 1d order by time desc limit 1000`);
+
+        var html = '';
+        if (errors.length) {
+            html += 'Errors :\n'
+            html += errors.map(error => `${moment(error.time).format('YYYY-MM-DD HH:mm:ss')} ${error.driver} ${error.host}\n`).join('');
+        }
+
+        if (html.trim() == '') return res.send('nothing to send');
+
+        await sendMail({
+            to: "rafi.piccolo@gmail.com, martin.wb.2015@gmail.com",
+            subject: "dockercron " + process.env.HOSTNAME,
+            text: html,
+            html: html.replace(/\n/g, '<br />'),
+        });
+
+        res.send('ok');
+    } catch (err) {
+        next(err);
+    }
+})
+
 app.get('/health', (req, res) => res.send('ok'))
 
 app.listen(port, () => console.log(`Example app listening at http://localhost:${port}`))

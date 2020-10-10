@@ -28,6 +28,11 @@ JSON.safeStringify = (obj, indent = 2) => {
     return retVal;
 };
 
+app.use((req, res, next) => {
+    console.log(req.method + ' ' + req.originalUrl);
+    next();
+});
+
 app.get('/', async (req, res, next) => {
     res.sendFile(__dirname + '/index.html')
 });

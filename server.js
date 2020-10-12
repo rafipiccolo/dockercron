@@ -49,16 +49,6 @@ app.get('/state/:id/:name', (req, res) => {
     return res.send(require('util').inspect(crons[req.params.id][req.params.name]));
 })
 
-app.get('/cron/alert', async (req, res, next) => {
-    try {
-        var data = await influxdb.query(`select * from dockercron where exitCode != 0 order by time desc limit 10`);
-
-        res.send(data);
-    } catch (err) {
-        next(err);
-    }
-})
-
 app.get('/data', async (req, res, next) => {
     try {
         var sql = '';
@@ -82,7 +72,10 @@ app.get('/cron/alert', async (req, res, next) => {
         var html = '';
         if (errors.length) {
             html += 'Errors :\n'
-            html += errors.map(error => `${moment(error.time).format('YYYY-MM-DD HH:mm:ss')} ${error.driver} ${error.host}\n`).join('');
+            html += errors.map(error => {
+                var url = `https://monitoring.raphaelpiccolo.com/logsMysql?containerName=/dockercron&hostname=${process.env.HOSTNAME}&start=${moment(error.time).add(-1, 'm').toDate().getTime()}000000&end=${moment(error.time).add(+1, 'm').toDate().getTime()}000000`;
+                return `<a href="${url}">${moment(error.time).format('YYYY-MM-DD HH:mm:ss')}</a> ${error.cronname} ${error.host}\n`;
+            }).join('');
         }
 
         if (html.trim() == '') return res.send('nothing to send');

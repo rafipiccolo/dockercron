@@ -65,34 +65,6 @@ app.get('/data', async (req, res, next) => {
     }
 })
 
-app.get('/cron/alert', async (req, res, next) => {
-    try {
-        var errors = await influxdb.query(`select * from dockercron where "host" = '${process.env.HOSTNAME}' and exitCode != 0 and time > now() - 1d order by time desc limit 1000`);
-
-        var html = '';
-        if (errors.length) {
-            html += 'Errors :\n'
-            html += errors.map(error => {
-                var url = `https://monitoring.raphaelpiccolo.com/logsMysql?containerName=/dockercron&hostname=${process.env.HOSTNAME}&start=${moment(error.time).add(-1, 'm').toDate().getTime()}000000&end=${moment(error.time).add(+1, 'm').toDate().getTime()}000000`;
-                return `<a href="${url}">${moment(error.time).format('YYYY-MM-DD HH:mm:ss')}</a> ${error.cronname} ${error.host}\n`;
-            }).join('');
-        }
-
-        if (html.trim() == '') return res.send('nothing to send');
-
-        await sendMail({
-            to: "rafi.piccolo@gmail.com, martin.wb.2015@gmail.com",
-            subject: "dockercron " + process.env.HOSTNAME,
-            text: html,
-            html: html.replace(/\n/g, '<br />'),
-        });
-
-        res.send('ok');
-    } catch (err) {
-        next(err);
-    }
-})
-
 app.get('/health', (req, res) => res.send('ok'))
 
 app.listen(port, () => console.log(`Example app listening at http://localhost:${port}`))

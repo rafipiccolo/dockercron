@@ -12,22 +12,6 @@ const sendMail = require('./lib/sendMail');
 const app = express()
 const port = process.env.PORT || 3000;
 
-JSON.safeStringify = (obj, indent = 2) => {
-    let cache = [];
-    const retVal = JSON.stringify(
-        obj,
-        (key, value) =>
-            typeof value === "object" && value !== null
-                ? cache.includes(value)
-                    ? undefined // Duplicate reference found, discard key
-                    : cache.push(value) && value // Store value in our collection
-                : value,
-        indent
-    );
-    cache = null;
-    return retVal;
-};
-
 app.use((req, res, next) => {
     console.log(req.method + ' ' + req.originalUrl);
     next();
@@ -37,16 +21,37 @@ app.get('/', async (req, res, next) => {
     res.sendFile(__dirname + '/index.html')
 });
 
+function getCleanCrons() {
+    var results = {};
+
+    for (var id in crons) {
+        results[id] = {}
+        for (var name in crons[id]) {
+            results[id][name] = {}
+            for (var field in crons[id][name]) {
+                if (field == 'job') continue;
+                
+                results[id][name][field] = crons[id][name][field];
+            }
+        }
+    }
+
+    return results;
+}
+
 app.get('/state', (req, res) => {
-    return res.send(JSON.safeStringify(crons));
+    var results = getCleanCrons();
+    return res.send(JSON.stringify(results, null, 4));
 })
 
 app.get('/state/:id', (req, res) => {
-    return res.send(require('util').inspect(crons[req.params.id]));
+    var results = getCleanCrons();
+    return res.send(JSON.stringify(results[req.params.id], null, 4));
 })
 
 app.get('/state/:id/:name', (req, res) => {
-    return res.send(require('util').inspect(crons[req.params.id][req.params.name]));
+    var results = getCleanCrons();
+    return res.send(JSON.stringify(results[req.params.id][req.params.name], null, 4));
 })
 
 app.get('/data', async (req, res, next) => {

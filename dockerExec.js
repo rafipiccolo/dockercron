@@ -56,16 +56,17 @@ module.exports = function dockerExec(id, options, callback) {
             container.modem.demuxStream(stream, stdout, stderr);
 
             var buffer_stdout = '';
+            options.runningdata.output = '';
             stdout.on('data', function(chunk) {
                 buffer_stdout += chunk;
+                options.runningdata.output += chunk;
             });
-            options.runningdata.stdout = buffer_stdout;
 
             var buffer_stderr = '';
             stderr.on('data', function(chunk) {
                 buffer_stderr += chunk;
+                options.runningdata.output += chunk;
             });
-            options.runningdata.stderr = buffer_stderr;
 
             // when all is done we get exec results
             stream.on('end', () => {

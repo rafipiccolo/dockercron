@@ -55,16 +55,12 @@ module.exports = function dockerExec(id, options, callback) {
             var stderr = new Stream.PassThrough();
             container.modem.demuxStream(stream, stdout, stderr);
 
-            var buffer_stdout = '';
             options.runningdata.output = '';
             stdout.on('data', function(chunk) {
-                buffer_stdout += chunk;
                 options.runningdata.output += chunk;
             });
 
-            var buffer_stderr = '';
             stderr.on('data', function(chunk) {
-                buffer_stderr += chunk;
                 options.runningdata.output += chunk;
             });
 
@@ -79,8 +75,6 @@ module.exports = function dockerExec(id, options, callback) {
                     if (err) return safecallback(err);
 
                     safecallback(null, {
-                        stdout: buffer_stdout,
-                        stderr: buffer_stderr,
                         exitCode: data.ExitCode,
                         ms: hrend[0]*1000 + hrend[1] / 1000000,
                         timeout: timeouted,

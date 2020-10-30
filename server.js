@@ -170,7 +170,7 @@ function addAllCronsForContainer(id) {
     }
 }
 
-function createCron(id, cron){
+function createCron(id, cron) {
     console.log(cron.name+'@'+id.substr(0, 8)+' install '+cron.schedule+' '+cron.command);
 
     cron.job = new CronJob(cron.schedule, function() {
@@ -186,15 +186,12 @@ function createCron(id, cron){
         dockerExec(id, cron, async (err, data) => {
             cron.runningdata = {...cron.runningdata, ...data};
 
-            if (err) {
-                cron.running = 0;
-                console.error(err);
-            }
+            cron.running = 0;
+            if (err) console.error(err);
 
             console.log(cron.name+'@'+id.substr(0, 8)+' ms: '+data.ms+' timeout:'+(data.timeout?1:0)+' exitCode: '+data.exitCode+' stdout: '+data.stdout.trim()+' stderr: '+data.stderr.trim());
 
             influxdb.insert('dockercron', { host: process.env.HOSTNAME, cronname: cron.name}, {exitCode: data.exitCode, timeout: data.timeout, ms: data.ms });
-            cron.running = 0;
         });
     }, null, true, 'Europe/Paris');
 

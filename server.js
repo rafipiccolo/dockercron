@@ -3,7 +3,7 @@ var Docker = require('dockerode');
 var express = require('express');
 var moment = require('moment');
 var docker = new Docker({socketPath: '/var/run/docker.sock'});
-var influxdb = require('./influxdb');
+var influxdb = require('./lib/influxdb');
 var dockerExec = require('./dockerExec.js');
 var LineStream = require('byline').LineStream;
 const sendMail = require('./lib/sendMail');
@@ -18,7 +18,7 @@ app.use((req, res, next) => {
 });
 
 app.get('/', async (req, res, next) => {
-    res.sendFile(__dirname + '/index.html')
+    res.sendFile(__dirname + '/index2.html')
 });
 
 function getCleanCrons() {
@@ -85,7 +85,7 @@ docker.listContainers(function(err, containers) {
     if(err) throw err;
 
     containers.map((container) => {
-        register(container.Id, container.Labels);
+        register(container.Id, container.Names[0], container.Labels);
     })
 });
 
@@ -106,8 +106,8 @@ docker.getEvents({}, function (err, stream) {
                 var container = docker.getContainer(data.id);
                 container.inspect(function (err, containerdata) {
                     if(err) return console.error(err);
-                    
-                    register(data.id, containerdata.Config.Labels);
+
+                    register(data.id, containerdata.Name, containerdata.Config.Labels);
                 });
             }
             else if (data.Action == 'die' || data.Action == 'stop') {
@@ -135,7 +135,7 @@ docker.getEvents({}, function (err, stream) {
 //
 // { test: { name: 'test', command: 'echo raf', schedule: '* * * * * *' } }
 // 
-function register(id, labels) {
+function register(id, name, labels) {
     labels = labels || {};
 
     // remove all crons of this container
@@ -153,6 +153,8 @@ function register(id, labels) {
             crons[id] = crons[id] || {};
             crons[id][cronname] = crons[id][cronname] || {};
             crons[id][cronname][option] = value;
+            crons[id][cronname].containerId = id;
+            crons[id][cronname].containerName = name;
             crons[id][cronname].name = cronname;
             if (option == 'command') nb++;
         }

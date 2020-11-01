@@ -95,7 +95,8 @@
                             <th style={{ width: 100 }}>timeout</th>
                             <th style={{ width: 100 }}>running</th>
                         </tr>
-                        {crons.map(cron => <tr key={Math.random() + ''}>
+                        {crons.map(cron => <tr key={cron.containerId + cron.name}
+                        className={cron.containerId == filter.containerId && cron.name == filter.name ? "table-active" : ""}>
                             <td>{cron.containerId.substr(0, 8)}</td>
                             <td>{cron.containerName}</td>
                             <td>{cron.name}</td>
@@ -109,17 +110,23 @@
                     </tbody>
                 </table>
                 <div style={{color: 'white', background: '#333333', padding: 10}}>
-                    {(current && current.runningdata) ? (
+                    {(current) ? (
                         <>
-                            <p>
-                                start: {current.runningdata.start}<br />
-                                end: {current.runningdata.end}<br />
-                                ms: {current.runningdata.ms}<br />
-                                exitCode: {current.runningdata.exitCode}<br />
-                                timeout: {current.runningdata.timeout}<br />
-                                output:
-                            </p>
-                            <pre style={{color: 'white'}}>{current.runningdata.output}</pre>
+                            <p>{current.containerName} | {current.name} | {current.running?'RUNNING':'-'}</p>
+                            {current.runningdata ? (
+                                <>
+                                    <p>
+                                        current.runningdata
+                                        start: {moment(current.runningdata.start).format('YYYY-MM-DD HH:mm:ss.SSS')}<br />
+                                        end: {moment(current.runningdata.end).format('YYYY-MM-DD HH:mm:ss.SSS')}<br />
+                                        ms: {current.runningdata.ms}<br />
+                                        exitCode: {current.runningdata.exitCode}<br />
+                                        timeout: {current.runningdata.timeout}<br />
+                                        output:
+                                    </p>
+                                    <pre style={{color: 'white'}}>{current.runningdata.output}</pre>
+                                </>
+                            ) : null}
                         </>
                     ) : null}
                 </div>

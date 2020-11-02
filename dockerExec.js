@@ -1,4 +1,6 @@
 var Docker = require('dockerode');
+var moment = require('moment');
+var fs = require('fs');
 var Stream = require('stream');
 var docker = new Docker({socketPath: '/var/run/docker.sock'});
 
@@ -55,17 +57,28 @@ module.exports = function dockerExec(id, options, callback) {
             var stderr = new Stream.PassThrough();
             container.modem.demuxStream(stream, stdout, stderr);
 
+            var writeStream = fs.createWriteStream('log/'+moment().format('YYYY-MM-DD--HH-mm-ss')+'--'+options.name, function(err) {
+                if (err) console.error('cant create log file', err);
+            });
             options.runningdata.output = '';
             stdout.on('data', function(chunk) {
                 options.runningdata.output += chunk;
+                writeStream.write(chunk, function(err) {
+                    if (err) console.error('cant write logs for stdout', err);
+                });
             });
-
+            
             stderr.on('data', function(chunk) {
                 options.runningdata.output += chunk;
+                writeStream.write(chunk, function(err) {
+                    if (err) console.error('cant write logs for stderr', err);
+                });
             });
 
             // when all is done we get exec results
             stream.on('end', () => {
+                writeStream.end();
+
                 var hrend = process.hrtime(hrstart)
                 options.runningdata.end = new Date();
 

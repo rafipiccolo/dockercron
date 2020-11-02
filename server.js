@@ -1,5 +1,6 @@
 var CronJob = require('cron').CronJob;
 var Docker = require('dockerode');
+var fs = require('fs');
 var express = require('express');
 var moment = require('moment');
 var docker = new Docker({socketPath: '/var/run/docker.sock'});
@@ -8,6 +9,7 @@ var dockerExec = require('./dockerExec.js');
 var LineStream = require('byline').LineStream;
 const sendMail = require('./lib/sendMail');
 
+fs.mkdirSync('log', {recursive: true});
 
 const app = express()
 const port = process.env.PORT || 3000;
@@ -191,7 +193,7 @@ function createCron(id, cron) {
             cron.running = 0;
             if (err) console.error(err);
 
-            console.log(cron.name+'@'+id.substr(0, 8)+' ms: '+data.ms+' timeout:'+(data.timeout?1:0)+' exitCode: '+data.exitCode+' stdout: '+data.stdout.trim()+' stderr: '+data.stderr.trim());
+            console.log(cron.name+'@'+id.substr(0, 8)+' ms: '+data.ms+' timeout:'+(data.timeout?1:0)+' exitCode: '+data.exitCode+' output: '+cron.runningdata.output.trim());
 
             influxdb.insert('dockercron', { host: process.env.HOSTNAME, cronname: cron.name}, {exitCode: data.exitCode, timeout: data.timeout, ms: data.ms });
         });

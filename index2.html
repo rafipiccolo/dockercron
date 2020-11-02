@@ -89,7 +89,7 @@
                             <th style={{ width: 100 }}>containerId</th>
                             <th style={{ width: 100 }}>containerName</th>
                             <th style={{ width: 100 }}>name</th>
-                            <th style={{ width: 100 }}>command</th>
+                            <th>command</th>
                             <th style={{ width: 100 }}>no overlap</th>
                             <th style={{ width: 100 }}>schedule</th>
                             <th style={{ width: 100 }}>timeout</th>
@@ -116,12 +116,11 @@
                             {current.runningdata ? (
                                 <>
                                     <p>
-                                        current.runningdata
-                                        start: {moment(current.runningdata.start).format('YYYY-MM-DD HH:mm:ss.SSS')}<br />
-                                        end: {moment(current.runningdata.end).format('YYYY-MM-DD HH:mm:ss.SSS')}<br />
+                                        start: {current.runningdata.start ? moment(current.runningdata.start).format('YYYY-MM-DD HH:mm:ss.SSS') : null}<br />
+                                        end: {current.runningdata.end ? moment(current.runningdata.end).format('YYYY-MM-DD HH:mm:ss.SSS') : null}<br />
                                         ms: {current.runningdata.ms}<br />
                                         exitCode: {current.runningdata.exitCode}<br />
-                                        timeout: {current.runningdata.timeout}<br />
+                                        timeout: {current.runningdata.timeout ? 'true': 'false'}<br />
                                         output:
                                     </p>
                                     <pre style={{color: 'white'}}>{current.runningdata.output}</pre>

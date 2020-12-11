@@ -1,31 +1,31 @@
 {
-  "name": "dockercron",
-  "version": "1.0.1",
-  "description": "register cron jobs in docker labels",
-  "main": "server.js",
-  "dependencies": {
-    "byline": "^5.0.0",
-    "cron": "^1.8.2",
-    "dockerode": "^3.2.1",
-    "express": "^4.17.1",
-    "moment": "^2.29.1",
-    "nano-time": "^1.0.0",
-    "nodemailer": "^6.4.16",
-    "request": "^2.88.2"
-  },
-  "devDependencies": {},
-  "scripts": {
-    "test": "mocha",
-    "start": "node server.js"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/rafipiccolo/dockercron.git"
-  },
-  "author": "Raphael Piccolo",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/rafipiccolo/dockercron/issues"
-  },
-  "homepage": "https://github.com/rafipiccolo/dockercron#readme"
+    "name": "dockercron",
+    "version": "1.0.1",
+    "description": "register cron jobs in docker labels",
+    "main": "server.js",
+    "dependencies": {
+        "byline": "^5.0.0",
+        "cron": "^1.8.2",
+        "dockerode": "^3.2.1",
+        "express": "^4.17.1",
+        "moment": "^2.29.1",
+        "nano-time": "^1.0.0",
+        "nodemailer": "^6.4.16",
+        "request": "^2.88.2"
+    },
+    "devDependencies": {},
+    "scripts": {
+        "test": "mocha",
+        "start": "node server.js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/rafipiccolo/dockercron.git"
+    },
+    "author": "Raphael Piccolo",
+    "license": "ICS",
+    "bugs": {
+        "url": "https://github.com/rafipiccolo/dockercron/issues"
+    },
+    "homepage": "https://github.com/rafipiccolo/dockercron#readme"
 }

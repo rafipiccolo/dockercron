@@ -2,12 +2,12 @@ var Docker = require('dockerode');
 var moment = require('moment');
 var fs = require('fs');
 var Stream = require('stream');
-var docker = new Docker({socketPath: '/var/run/docker.sock'});
+var docker = new Docker({ socketPath: '/var/run/docker.sock' });
 
 module.exports = function dockerExec(id, options, callback) {
     options.runningdata = options.runningdata || {};
     options.runningdata.start = new Date();
-    
+
     var timeouted = 0;
     var timeout = null;
 
@@ -17,21 +17,20 @@ module.exports = function dockerExec(id, options, callback) {
         called = 1;
         callback(...a);
     }
-    var hrstart = process.hrtime()
+    var hrstart = process.hrtime();
 
     // create an exec on the container
     var container = docker.getContainer(id);
     var params = {
-        "Cmd": ["sh", "-c", options.command],
-        "AttachStdin": false,
-        "AttachStdout": true,
-        "AttachStderr": true,
-        "Tty": false,
-        "Env": []
+        Cmd: ['sh', '-c', options.command],
+        AttachStdin: false,
+        AttachStdout: true,
+        AttachStderr: true,
+        Tty: false,
+        Env: [],
     };
-    if (options.user)
-        params.User = options.user;
-    container.exec(params, function(err, exec) {
+    if (options.user) params.User = options.user;
+    container.exec(params, function (err, exec) {
         if (err) return safecallback(err);
 
         // start to execute
@@ -42,14 +41,14 @@ module.exports = function dockerExec(id, options, callback) {
                 timeout = setTimeout(() => {
                     exec.inspect((err, data) => {
                         // if (err) return safecallback(err);
-                        if (err) return console.error('cant inspect exec on '+ id);
+                        if (err) return console.error('cant inspect exec on ' + id);
 
                         timeouted = 1;
-                        dockerExec(id, {command: 'kill ' + data.Pid}, () => {
+                        dockerExec(id, { command: 'kill ' + data.Pid }, () => {
                             if (err) return console.error('cant kill process ' + data.Pid);
                         });
                     });
-                }, options.timeout*1000);
+                }, options.timeout * 1000);
             }
 
             // get single streams from the big stream
@@ -57,20 +56,20 @@ module.exports = function dockerExec(id, options, callback) {
             var stderr = new Stream.PassThrough();
             container.modem.demuxStream(stream, stdout, stderr);
 
-            var writeStream = fs.createWriteStream('log/'+moment().format('YYYY-MM-DD--HH-mm-ss')+'--'+options.name, function(err) {
+            var writeStream = fs.createWriteStream('log/' + moment().format('YYYY-MM-DD--HH-mm-ss') + '--' + options.name, function (err) {
                 if (err) console.error('cant create log file', err);
             });
             options.runningdata.output = '';
-            stdout.on('data', function(chunk) {
+            stdout.on('data', function (chunk) {
                 options.runningdata.output += chunk;
-                writeStream.write(chunk, function(err) {
+                writeStream.write(chunk, function (err) {
                     if (err) console.error('cant write logs for stdout', err);
                 });
             });
-            
-            stderr.on('data', function(chunk) {
+
+            stderr.on('data', function (chunk) {
                 options.runningdata.output += chunk;
-                writeStream.write(chunk, function(err) {
+                writeStream.write(chunk, function (err) {
                     if (err) console.error('cant write logs for stderr', err);
                 });
             });
@@ -79,7 +78,7 @@ module.exports = function dockerExec(id, options, callback) {
             stream.on('end', () => {
                 writeStream.end();
 
-                var hrend = process.hrtime(hrstart)
+                var hrend = process.hrtime(hrstart);
                 options.runningdata.end = new Date();
 
                 clearTimeout(timeout);
@@ -89,13 +88,13 @@ module.exports = function dockerExec(id, options, callback) {
 
                     safecallback(null, {
                         exitCode: data.ExitCode,
-                        ms: hrend[0]*1000 + hrend[1] / 1000000,
+                        ms: hrend[0] * 1000 + hrend[1] / 1000000,
                         timeout: timeouted,
                     });
                 });
             });
         });
     });
-}
+};
 
 // module.exports('f99a4b6ddec0', 'echo rafi', console.log);

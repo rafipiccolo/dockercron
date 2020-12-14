@@ -1,9 +1,10 @@
 # Docker Cron
 
 register cron jobs in docker labels.
-- jobs schedule have second precision (not minutes like old standard crontabs)
-- jobs command are executed in the container itself
-- can export metrics to influxdb for monitoring
+
+-   jobs schedule have second precision (not minutes like old standard crontabs)
+-   jobs command are executed in the container itself
+-   can export metrics to influxdb for monitoring
 
 exemple:
 
@@ -12,7 +13,6 @@ exemple:
     - "cron.test.no-overlap=true"
     - "cron.test.timeout=5"
     - "cron.test.user=www-data"
-
 
 # Install
 
@@ -69,20 +69,19 @@ start it
 
 **environment** variables :
 
-- INFLUXDB : (optional)
+-   INFLUXDB : (optional)
 
     The influxdb url used to push data.
     exemple of url :
-        http://influxdb:8086/write?db=dockercron
+    http://influxdb:8086/write?db=dockercron
     exemple of data written to influxdb :
-        dockercron,cronname=test ms=246.950014,exitCode=0 1588797072250000000
+    dockercron,cronname=test ms=246.950014,exitCode=0 1588797072250000000
 
-- VERBOSE : (optional) (default 0)
+-   VERBOSE : (optional) (default 0)
 
     set 1 or true to see debug informations
 
-- HOSTNAME : the hostname tag pushed to influxdb
-
+-   HOSTNAME : the hostname tag pushed to influxdb
 
 **labels** format :
 
@@ -110,18 +109,15 @@ timeout
     - "cron.test.timeout=5"
     # kill the job if timeout is reached (seconds)
 
-user
-    - "cron.test.user=www-data"
-    # run the job as this user, inside the container (default root)
-
+user - "cron.test.user=www-data" # run the job as this user, inside the container (default root)
 
 # available routes
 
-- /
-- /state
-- /state/:id
-- /state/:id/:name
-- /health
+-   /
+-   /state
+-   /state/:id
+-   /state/:id/:name
+-   /health
 
 # How it works
 
@@ -129,8 +125,9 @@ On startup we call docker to get all running containers labels
 and then we register the cronjobs we found
 
 In parralel we poll docker events :
-- everytime a container is "die" / "stop" => remove all cronjobs of this container
-- everytime a container is "start" => remove and then register all cronjobs of this container
+
+-   everytime a container is "die" / "stop" => remove all cronjobs of this container
+-   everytime a container is "start" => remove and then register all cronjobs of this container
 
 This package is used to parse and execute cron jobs : https://www.npmjs.com/package/cron
 This package is used to communicate with docker : https://www.npmjs.com/package/dockerode

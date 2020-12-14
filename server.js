@@ -3,15 +3,15 @@ var Docker = require('dockerode');
 var fs = require('fs');
 var express = require('express');
 var moment = require('moment');
-var docker = new Docker({socketPath: '/var/run/docker.sock'});
+var docker = new Docker({ socketPath: '/var/run/docker.sock' });
 var influxdb = require('./lib/influxdb');
 var dockerExec = require('./dockerExec.js');
 var LineStream = require('byline').LineStream;
 const sendMail = require('./lib/sendMail');
 
-fs.mkdirSync('log', {recursive: true});
+fs.mkdirSync('log', { recursive: true });
 
-const app = express()
+const app = express();
 const port = process.env.PORT || 3000;
 
 app.use((req, res, next) => {
@@ -20,19 +20,19 @@ app.use((req, res, next) => {
 });
 
 app.get('/', async (req, res, next) => {
-    res.sendFile(__dirname + '/index2.html')
+    res.sendFile(__dirname + '/index2.html');
 });
 
 function getCleanCrons() {
     var results = {};
 
     for (var id in crons) {
-        results[id] = {}
+        results[id] = {};
         for (var name in crons[id]) {
-            results[id][name] = {}
+            results[id][name] = {};
             for (var field in crons[id][name]) {
                 if (field == 'job') continue;
-                
+
                 results[id][name][field] = crons[id][name][field];
             }
         }
@@ -44,59 +44,54 @@ function getCleanCrons() {
 app.get('/state', (req, res) => {
     var results = getCleanCrons();
     return res.send(JSON.stringify(results, null, 4));
-})
+});
 
 app.get('/state/:id', (req, res) => {
     var results = getCleanCrons();
     return res.send(JSON.stringify(results[req.params.id], null, 4));
-})
+});
 
 app.get('/state/:id/:name', (req, res) => {
     var results = getCleanCrons();
     return res.send(JSON.stringify(results[req.params.id][req.params.name], null, 4));
-})
+});
 
 app.get('/data', async (req, res, next) => {
     try {
         var sql = '';
 
         var wheres = [];
-        if (parseInt(req.query.error))
-            wheres.push(`"exitCode" != 0`);
-        wheres.push(`"host" = '${process.env.HOSTNAME}'`)
+        if (parseInt(req.query.error)) wheres.push(`"exitCode" != 0`);
+        wheres.push(`"host" = '${process.env.HOSTNAME}'`);
         sql = `select * from dockercron where ${wheres.join(' and ')} order by time desc limit 1000`;
         var data = await influxdb.query(sql);
         res.send(data);
     } catch (err) {
         next(err);
     }
-})
+});
 
-app.get('/health', (req, res) => res.send('ok'))
+app.get('/health', (req, res) => res.send('ok'));
 
-app.listen(port, () => console.log(`Example app listening at http://localhost:${port}`))
-
-
+app.listen(port, () => console.log(`Example app listening at http://localhost:${port}`));
 
 // all crons
 var crons = {};
 
-
 // get all containers on startup and register all crons
-docker.listContainers(function(err, containers) {
-    if(err) throw err;
+docker.listContainers(function (err, containers) {
+    if (err) throw err;
 
     containers.map((container) => {
         register(container.Id, container.Names[0], container.Labels);
-    })
+    });
 });
-
 
 // on container event, recreate all crons
 docker.getEvents({}, function (err, stream) {
-    if(err) throw err;
-    
-    var lineStream = new LineStream({encoding: 'utf8'});
+    if (err) throw err;
+
+    var lineStream = new LineStream({ encoding: 'utf8' });
     stream.pipe(lineStream);
     lineStream.on('data', function (chunk) {
         var data = JSON.parse(chunk);
@@ -107,18 +102,16 @@ docker.getEvents({}, function (err, stream) {
             if (data.Action == 'start') {
                 var container = docker.getContainer(data.id);
                 container.inspect(function (err, containerdata) {
-                    if(err) return console.error(err);
+                    if (err) return console.error(err);
 
                     register(data.id, containerdata.Name, containerdata.Config.Labels);
                 });
-            }
-            else if (data.Action == 'die' || data.Action == 'stop') {
+            } else if (data.Action == 'die' || data.Action == 'stop') {
                 register(data.id);
             }
         }
     });
 });
-
 
 // labels from docker compose
 //
@@ -136,18 +129,18 @@ docker.getEvents({}, function (err, stream) {
 // => parsed
 //
 // { test: { name: 'test', command: 'echo raf', schedule: '* * * * * *' } }
-// 
+//
 function register(id, name, labels) {
     labels = labels || {};
 
     // remove all crons of this container
     removeAllCronsForContainer(id);
-    
+
     // parse all crons of this container
     var nb = 0;
     for (var label in labels) {
         var value = labels[label];
-        
+
         var m = label.match(/^cron\.([a-z0-9]+)\.([a-z\-]+)$/i);
         if (m) {
             var cronname = m[1];
@@ -162,7 +155,7 @@ function register(id, name, labels) {
         }
     }
 
-    verbose(id.substr(0, 8)+' found '+nb+' cronjobs');
+    verbose(id.substr(0, 8) + ' found ' + nb + ' cronjobs');
 
     // start all detected crons
     addAllCronsForContainer(id);
@@ -175,29 +168,51 @@ function addAllCronsForContainer(id) {
 }
 
 function createCron(id, cron) {
-    console.log(cron.name+'@'+id.substr(0, 8)+' install '+cron.schedule+' '+cron.command);
+    console.log(cron.name + '@' + id.substr(0, 8) + ' install ' + cron.schedule + ' ' + cron.command);
 
-    cron.job = new CronJob(cron.schedule, function() {
-        verbose(cron.name+'@'+id.substr(0, 8)+' exec '+cron.command);
+    cron.job = new CronJob(
+        cron.schedule,
+        function () {
+            verbose(cron.name + '@' + id.substr(0, 8) + ' exec ' + cron.command);
 
-        // check if already running for no overlap mode
-        if ((cron['no-overlap'] == 'true' || cron['no-overlap'] == '1') && cron.running) {
-            return verbose(cron.name+'@'+id.substr(0, 8)+' skip already running');
-        }
-        cron.running = 1;
-        
-        // execute
-        dockerExec(id, cron, async (err, data) => {
-            cron.runningdata = {...cron.runningdata, ...data};
+            // check if already running for no overlap mode
+            if ((cron['no-overlap'] == 'true' || cron['no-overlap'] == '1') && cron.running) {
+                return verbose(cron.name + '@' + id.substr(0, 8) + ' skip already running');
+            }
+            cron.running = 1;
 
-            cron.running = 0;
-            if (err) console.error(err);
+            // execute
+            dockerExec(id, cron, async (err, data) => {
+                cron.runningdata = { ...cron.runningdata, ...data };
 
-            console.log(cron.name+'@'+id.substr(0, 8)+' ms: '+data.ms+' timeout:'+(data.timeout?1:0)+' exitCode: '+data.exitCode+' output: '+cron.runningdata.output.trim());
+                cron.running = 0;
+                if (err) console.error(err);
 
-            influxdb.insert('dockercron', { host: process.env.HOSTNAME, cronname: cron.name}, {exitCode: data.exitCode, timeout: data.timeout, ms: data.ms });
-        });
-    }, null, true, 'Europe/Paris');
+                console.log(
+                    cron.name +
+                        '@' +
+                        id.substr(0, 8) +
+                        ' ms: ' +
+                        data.ms +
+                        ' timeout:' +
+                        (data.timeout ? 1 : 0) +
+                        ' exitCode: ' +
+                        data.exitCode +
+                        ' output: ' +
+                        cron.runningdata.output.trim()
+                );
+
+                influxdb.insert(
+                    'dockercron',
+                    { host: process.env.HOSTNAME, cronname: cron.name },
+                    { exitCode: data.exitCode, timeout: data.timeout, ms: data.ms }
+                );
+            });
+        },
+        null,
+        true,
+        'Europe/Paris'
+    );
 
     cron.job.start();
 }
@@ -205,17 +220,12 @@ function createCron(id, cron) {
 function removeAllCronsForContainer(id) {
     for (var name in crons[id]) {
         var cron = crons[id][name];
-        if (cron.job)
-            cron.job.stop();
+        if (cron.job) cron.job.stop();
         delete crons[id][name];
     }
 }
 
-
-
-
 // VERBOSE output
 function verbose(s) {
-    if (process.env.VERBOSE == 'true' || process.env.VERBOSE == '1')
-        console.log(s);
+    if (process.env.VERBOSE == 'true' || process.env.VERBOSE == '1') console.log(s);
 }

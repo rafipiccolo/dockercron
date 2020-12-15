@@ -1,6 +1,7 @@
 var CronJob = require('cron').CronJob;
 var Docker = require('dockerode');
 var fs = require('fs');
+var cors = require('cors');
 var express = require('express');
 var moment = require('moment');
 var docker = new Docker({ socketPath: '/var/run/docker.sock' });
@@ -13,6 +14,8 @@ fs.mkdirSync('log', { recursive: true });
 
 const app = express();
 const port = process.env.PORT || 3000;
+
+app.use(cors())
 
 app.use((req, res, next) => {
     console.log(req.method + ' ' + req.originalUrl);

@@ -15,7 +15,7 @@ fs.mkdirSync('log', { recursive: true });
 const app = express();
 const port = process.env.PORT || 3000;
 
-app.use(cors())
+app.use(cors());
 
 app.use((req, res, next) => {
     console.log(req.method + ' ' + req.originalUrl);

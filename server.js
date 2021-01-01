@@ -2,7 +2,6 @@ var CronJob = require('cron').CronJob;
 var Docker = require('dockerode');
 var fs = require('fs');
 var cors = require('cors');
-var express = require('express');
 var moment = require('moment');
 var docker = new Docker({ socketPath: '/var/run/docker.sock' });
 var influxdb = require('./lib/influxdb');
@@ -12,7 +11,10 @@ const sendMail = require('./lib/sendMail');
 
 fs.mkdirSync('log', { recursive: true });
 
+const express = require('express');
 const app = express();
+const http = require('http');
+const server = http.Server(app);
 const port = process.env.PORT || 3000;
 
 app.use(cors());
@@ -76,7 +78,9 @@ app.get('/data', async (req, res, next) => {
 
 app.get('/health', (req, res) => res.send('ok'));
 
-app.listen(port, () => console.log(`Example app listening at http://localhost:${port}`));
+server.listen(port, function () {
+    console.log('ready to go on ' + port);
+});
 
 // all crons
 var crons = {};

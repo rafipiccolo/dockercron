@@ -57,8 +57,8 @@ module.exports = function dockerExec(id, options, callback) {
             container.modem.demuxStream(stream, stdout, stderr);
 
             try {
-                fs.mkdirSync('log/' + options.name, {recursive: true});
-            } catch(err) {
+                fs.mkdirSync('log/' + options.name, { recursive: true });
+            } catch (err) {
                 console.error('cant create log folder', err);
             }
             var writeStream = fs.createWriteStream('log/' + options.name + '/' + moment().format('YYYY-MM-DD--HH-mm-ss'), function (err) {

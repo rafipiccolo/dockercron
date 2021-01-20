@@ -19,12 +19,12 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 
 app.use((req, res, next) => {
-    console.log(`${req.method  } ${  req.originalUrl}`);
+    console.log(`${req.method} ${req.originalUrl}`);
     next();
 });
 
 app.get('/', async (req, res, next) => {
-    res.sendFile(`${__dirname  }/index2.html`);
+    res.sendFile(`${__dirname}/index2.html`);
 });
 
 function getCleanCrons() {
@@ -78,7 +78,7 @@ app.get('/data', async (req, res, next) => {
 app.get('/health', (req, res) => res.send('ok'));
 
 server.listen(port, function () {
-    console.log(`ready to go on ${  port}`);
+    console.log(`ready to go on ${port}`);
 });
 
 // all crons
@@ -161,7 +161,7 @@ function register(id, name, labels) {
         }
     }
 
-    verbose(`${id.substr(0, 8)  } found ${  nb  } cronjobs`);
+    verbose(`${id.substr(0, 8)} found ${nb} cronjobs`);
 
     // start all detected crons
     addAllCronsForContainer(id);
@@ -174,16 +174,16 @@ function addAllCronsForContainer(id) {
 }
 
 function createCron(id, cron) {
-    console.log(`${cron.name  }@${  id.substr(0, 8)  } install ${  cron.schedule  } ${  cron.command}`);
+    console.log(`${cron.name}@${id.substr(0, 8)} install ${cron.schedule} ${cron.command}`);
 
     cron.job = new CronJob(
         cron.schedule,
         function () {
-            verbose(`${cron.name  }@${  id.substr(0, 8)  } exec ${  cron.command}`);
+            verbose(`${cron.name}@${id.substr(0, 8)} exec ${cron.command}`);
 
             // check if already running for no overlap mode
             if ((cron['no-overlap'] == 'true' || cron['no-overlap'] == '1') && cron.running) {
-                return verbose(`${cron.name  }@${  id.substr(0, 8)  } skip already running`);
+                return verbose(`${cron.name}@${id.substr(0, 8)} skip already running`);
             }
             cron.running = 1;
 
@@ -195,17 +195,9 @@ function createCron(id, cron) {
                 if (err) console.error(err);
 
                 console.log(
-                    `${cron.name 
-                        }@${ 
-                        id.substr(0, 8) 
-                        } ms: ${ 
-                        data.ms 
-                        } timeout:${ 
-                        data.timeout ? 1 : 0 
-                        } exitCode: ${ 
-                        data.exitCode 
-                        } output: ${ 
-                        cron.runningdata.output.trim()}`
+                    `${cron.name}@${id.substr(0, 8)} ms: ${data.ms} timeout:${data.timeout ? 1 : 0} exitCode: ${
+                        data.exitCode
+                    } output: ${cron.runningdata.output.trim()}`
                 );
 
                 influxdb.insert(

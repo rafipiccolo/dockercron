@@ -41,11 +41,11 @@ module.exports = function dockerExec(id, options, callback) {
                 timeout = setTimeout(() => {
                     exec.inspect((err, data) => {
                         // if (err) return safecallback(err);
-                        if (err) return console.error('cant inspect exec on ' + id);
+                        if (err) return console.error(`cant inspect exec on ${  id}`);
 
                         timeouted = 1;
-                        dockerExec(id, { command: 'kill ' + data.Pid }, () => {
-                            if (err) return console.error('cant kill process ' + data.Pid);
+                        dockerExec(id, { command: `kill ${  data.Pid}` }, () => {
+                            if (err) return console.error(`cant kill process ${  data.Pid}`);
                         });
                     });
                 }, options.timeout * 1000);
@@ -57,11 +57,11 @@ module.exports = function dockerExec(id, options, callback) {
             container.modem.demuxStream(stream, stdout, stderr);
 
             try {
-                fs.mkdirSync('log/' + options.name, { recursive: true });
+                fs.mkdirSync(`log/${  options.name}`, { recursive: true });
             } catch (err) {
                 console.error('cant create log folder', err);
             }
-            var writeStream = fs.createWriteStream('log/' + options.name + '/' + moment().format('YYYY-MM-DD--HH-mm-ss'), function (err) {
+            var writeStream = fs.createWriteStream(`log/${  options.name  }/${  moment().format('YYYY-MM-DD--HH-mm-ss')}`, function (err) {
                 if (err) console.error('cant create log file', err);
             });
             options.runningdata.output = '';

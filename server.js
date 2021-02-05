@@ -1,3 +1,5 @@
+'use strict';
+
 var CronJob = require('cron').CronJob;
 var Docker = require('dockerode');
 var fs = require('fs');

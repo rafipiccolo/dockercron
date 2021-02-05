@@ -1,3 +1,5 @@
+'use strict';
+
 var Docker = require('dockerode');
 var moment = require('moment');
 var fs = require('fs');

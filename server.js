@@ -88,7 +88,7 @@ var crons = {};
 docker.listContainers(function (err, containers) {
     if (err) throw err;
 
-    containers.map((container) => {
+    containers.forEach((container) => {
         register(container.Id, container.Names[0], container.Labels);
     });
 });

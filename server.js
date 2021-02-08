@@ -14,16 +14,16 @@ fs.mkdirSync('log', { recursive: true });
 
 const express = require('express');
 const app = express();
+app.set('trust proxy', process.env.TRUST_PROXY ?? 1);
 const http = require('http');
 const server = http.Server(app);
 const port = process.env.PORT || 3000;
 
 app.use(cors());
 
-app.use((req, res, next) => {
-    console.log(`${req.method} ${req.originalUrl}`);
-    next();
-});
+var expresslib = require('./lib/expresslib.js')
+app.use(expresslib.statmiddleware);
+app.use(expresslib.logmiddleware);
 
 app.get('/', async (req, res, next) => {
     res.sendFile(`${__dirname}/index2.html`);
@@ -82,6 +82,13 @@ app.get('/health', (req, res) => res.send('ok'));
 server.listen(port, function () {
     console.log(`ready to go on ${port}`);
 });
+
+app.get('/stats', function (req, res, next) {
+    return res.send(expresslib.getStatsBy(req.query.field || 'avg'));
+});
+
+app.use(expresslib.notfoundmiddleware);
+app.use(expresslib.errormiddleware);
 
 // all crons
 var crons = {};

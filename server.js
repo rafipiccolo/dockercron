@@ -21,7 +21,7 @@ const port = process.env.PORT || 3000;
 
 app.use(cors());
 
-var expresslib = require('./lib/expresslib.js')
+var expresslib = require('./lib/expresslib.js');
 app.use(expresslib.statmiddleware);
 app.use(expresslib.logmiddleware);
 

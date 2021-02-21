@@ -20,8 +20,10 @@ monitoring.gracefulShutdown(server);
 
 app.use(cors());
 
+app.use(monitoring.idmiddleware);
 app.use(monitoring.statmiddleware);
 app.use(monitoring.logmiddleware);
+monitoring.healthmiddleware(app);
 
 app.get('/', async (req, res, next) => {
     res.sendFile(`${__dirname}/index2.html`);
@@ -74,8 +76,6 @@ app.get('/data', async (req, res, next) => {
         next(err);
     }
 });
-
-app.get('/health', (req, res) => res.send('ok'));
 
 app.get('/stats', function (req, res, next) {
     return res.send(monitoring.getStatsBy(req.query.field || 'avg'));

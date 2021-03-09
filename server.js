@@ -23,6 +23,7 @@ app.use(cors());
 app.use(monitoring.idmiddleware);
 app.use(monitoring.statmiddleware);
 app.use(monitoring.logmiddleware);
+app.use(monitoring.multerCleanMiddleware);
 
 app.get('/', async (req, res, next) => {
     res.sendFile(`${__dirname}/index2.html`);

@@ -63,7 +63,7 @@ app.get('/state/:id/:name', (req, res) => {
 });
 
 app.get('/data', async (req, res, next) => {
-    try {        
+    try {
         var sql = `from(bucket: "bucket")
         |> range(start: -5m)
         |> filter(fn: (r) => r["_measurement"] == "dockercron")
@@ -71,7 +71,7 @@ app.get('/data', async (req, res, next) => {
         |> filter(fn: (r) => r["hostname"] == "${process.env.HOSTNAME}")
         |> sort(columns:["_time"], desc: true)
         |> limit(n:1000)`;
-        
+
         var data = await influxdb.query(sql);
         res.send(data);
     } catch (err) {

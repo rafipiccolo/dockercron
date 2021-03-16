@@ -63,13 +63,15 @@ app.get('/state/:id/:name', (req, res) => {
 });
 
 app.get('/data', async (req, res, next) => {
-    try {
-        var sql = '';
-
-        var wheres = [];
-        if (parseInt(req.query.error)) wheres.push(`"exitCode" != 0`);
-        wheres.push(`"host" = '${process.env.HOSTNAME}'`);
-        sql = `select * from dockercron where ${wheres.join(' and ')} order by time desc limit 1000`;
+    try {        
+        var sql = `from(bucket: "bucket")
+        |> range(start: -5m)
+        |> filter(fn: (r) => r["_measurement"] == "dockercron")
+        ${parseInt(req.query.error) ? '|> filter(fn: (r) => r["_field"] == "exitCode" and r["_value"] != 0)' : ''}
+        |> filter(fn: (r) => r["hostname"] == "${process.env.HOSTNAME}")
+        |> sort(columns:["_time"], desc: true)
+        |> limit(n:1000)`;
+        
         var data = await influxdb.query(sql);
         res.send(data);
     } catch (err) {
@@ -209,7 +211,7 @@ function createCron(id, cron) {
 
                 influxdb.insert(
                     'dockercron',
-                    { host: process.env.HOSTNAME, cronname: cron.name },
+                    { hostname: process.env.HOSTNAME, cronname: cron.name },
                     { exitCode: data.exitCode, timeout: data.timeout, ms: data.ms }
                 );
             });

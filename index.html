@@ -19,8 +19,8 @@
         <div id="root"></div>
         <script type="text/babel">
             function Liste() {
-                var [crons, setCrons] = React.useState([]);
-                var [error, setError] = React.useState(0);
+                let [crons, setCrons] = React.useState([]);
+                let [error, setError] = React.useState(0);
 
                 React.useEffect(() => {
                     (async () => {

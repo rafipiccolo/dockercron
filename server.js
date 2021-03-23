@@ -1,17 +1,17 @@
-var CronJob = require('cron').CronJob;
-var Docker = require('dockerode');
-var fs = require('fs');
-var cors = require('cors');
-var moment = require('moment');
-var docker = new Docker({ socketPath: '/var/run/docker.sock' });
-var influxdb = require('./lib/influxdb');
-var dockerExec = require('./dockerExec.js');
-var LineStream = require('byline').LineStream;
+let CronJob = require('cron').CronJob;
+let Docker = require('dockerode');
+let fs = require('fs');
+let cors = require('cors');
+let moment = require('moment');
+let docker = new Docker({ socketPath: '/var/run/docker.sock' });
+let influxdb = require('./lib/influxdb');
+let dockerExec = require('./dockerExec.js');
+let LineStream = require('byline').LineStream;
 
 fs.mkdirSync('log', { recursive: true });
 
 const express = require('express');
-var monitoring = require('./lib/monitoring.js');
+let monitoring = require('./lib/monitoring.js');
 const app = express();
 app.set('trust proxy', process.env.TRUST_PROXY ?? 1);
 const http = require('http');
@@ -30,13 +30,13 @@ app.get('/', async (req, res, next) => {
 });
 
 function getCleanCrons() {
-    var results = {};
+    let results = {};
 
-    for (var id in crons) {
+    for (let id in crons) {
         results[id] = {};
-        for (var name in crons[id]) {
+        for (let name in crons[id]) {
             results[id][name] = {};
-            for (var field in crons[id][name]) {
+            for (let field in crons[id][name]) {
                 if (field == 'job') continue;
 
                 results[id][name][field] = crons[id][name][field];
@@ -48,23 +48,23 @@ function getCleanCrons() {
 }
 
 app.get('/state', (req, res) => {
-    var results = getCleanCrons();
+    let results = getCleanCrons();
     return res.send(JSON.stringify(results, null, 4));
 });
 
 app.get('/state/:id', (req, res) => {
-    var results = getCleanCrons();
+    let results = getCleanCrons();
     return res.send(JSON.stringify(results[req.params.id], null, 4));
 });
 
 app.get('/state/:id/:name', (req, res) => {
-    var results = getCleanCrons();
+    let results = getCleanCrons();
     return res.send(JSON.stringify(results[req.params.id][req.params.name], null, 4));
 });
 
 app.get('/data', async (req, res, next) => {
     try {
-        var sql = `from(bucket: "bucket")
+        let sql = `from(bucket: "bucket")
         |> range(start: -5m)
         |> filter(fn: (r) => r["_measurement"] == "dockercron")
         ${parseInt(req.query.error) ? '|> filter(fn: (r) => r["_field"] == "exitCode" and r["_value"] != 0)' : ''}
@@ -72,7 +72,7 @@ app.get('/data', async (req, res, next) => {
         |> sort(columns:["_time"], desc: true)
         |> limit(n:1000)`;
 
-        var data = await influxdb.query(sql);
+        let data = await influxdb.query(sql);
         res.send(data);
     } catch (err) {
         next(err);
@@ -91,7 +91,7 @@ server.listen(port, function () {
     console.log(`ready to go on ${port}`);
 });
 // all crons
-var crons = {};
+let crons = {};
 
 // get all containers on startup and register all crons
 docker.listContainers(function (err, containers) {
@@ -106,16 +106,16 @@ docker.listContainers(function (err, containers) {
 docker.getEvents({}, function (err, stream) {
     if (err) throw err;
 
-    var lineStream = new LineStream({ encoding: 'utf8' });
+    let lineStream = new LineStream({ encoding: 'utf8' });
     stream.pipe(lineStream);
     lineStream.on('data', function (chunk) {
-        var data = JSON.parse(chunk);
+        let data = JSON.parse(chunk);
 
         // console.log('EVENT', data.id, data.Type, data.Action);
         // console.log('EVENTDETAIL', JSON.stringify(data));
         if (data.Type == 'container') {
             if (data.Action == 'start') {
-                var container = docker.getContainer(data.id);
+                let container = docker.getContainer(data.id);
                 container.inspect(function (err, containerdata) {
                     if (err) return console.error(err);
 
@@ -136,7 +136,7 @@ docker.getEvents({}, function (err, stream) {
 //
 // => get by dockerode
 //
-// var labels = {
+// let labels = {
 //     "cron.test.schedule": "* * * * * *",
 //     "cron.test.command": "echo raf",
 // }
@@ -152,14 +152,14 @@ function register(id, name, labels) {
     removeAllCronsForContainer(id);
 
     // parse all crons of this container
-    var nb = 0;
-    for (var label in labels) {
-        var value = labels[label];
+    let nb = 0;
+    for (let label in labels) {
+        let value = labels[label];
 
-        var m = label.match(/^cron\.([a-z0-9]+)\.([a-z\-]+)$/i);
+        let m = label.match(/^cron\.([a-z0-9]+)\.([a-z\-]+)$/i);
         if (m) {
-            var cronname = m[1];
-            var option = m[2];
+            let cronname = m[1];
+            let option = m[2];
             crons[id] = crons[id] || {};
             crons[id][cronname] = crons[id][cronname] || {};
             crons[id][cronname][option] = value;
@@ -177,7 +177,7 @@ function register(id, name, labels) {
 }
 
 function addAllCronsForContainer(id) {
-    for (var name in crons[id]) {
+    for (let name in crons[id]) {
         createCron(id, crons[id][name]);
     }
 }
@@ -225,8 +225,8 @@ function createCron(id, cron) {
 }
 
 function removeAllCronsForContainer(id) {
-    for (var name in crons[id]) {
-        var cron = crons[id][name];
+    for (let name in crons[id]) {
+        let cron = crons[id][name];
         if (cron.job) cron.job.stop();
         delete crons[id][name];
     }

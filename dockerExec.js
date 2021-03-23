@@ -1,27 +1,27 @@
-var Docker = require('dockerode');
-var moment = require('moment');
-var fs = require('fs');
-var Stream = require('stream');
-var docker = new Docker({ socketPath: '/var/run/docker.sock' });
+let Docker = require('dockerode');
+let moment = require('moment');
+let fs = require('fs');
+let Stream = require('stream');
+let docker = new Docker({ socketPath: '/var/run/docker.sock' });
 
 module.exports = function dockerExec(id, options, callback) {
     options.runningdata = options.runningdata || {};
     options.runningdata.start = new Date();
 
-    var timeouted = 0;
-    var timeout = null;
+    let timeouted = 0;
+    let timeout = null;
 
-    var called = false;
+    let called = false;
     function safecallback(...a) {
         if (called) return;
         called = 1;
         callback(...a);
     }
-    var hrstart = process.hrtime();
+    let hrstart = process.hrtime();
 
     // create an exec on the container
-    var container = docker.getContainer(id);
-    var params = {
+    let container = docker.getContainer(id);
+    let params = {
         Cmd: ['sh', '-c', options.command],
         AttachStdin: false,
         AttachStdout: true,
@@ -52,8 +52,8 @@ module.exports = function dockerExec(id, options, callback) {
             }
 
             // get single streams from the big stream
-            var stdout = new Stream.PassThrough();
-            var stderr = new Stream.PassThrough();
+            let stdout = new Stream.PassThrough();
+            let stderr = new Stream.PassThrough();
             container.modem.demuxStream(stream, stdout, stderr);
 
             try {
@@ -61,7 +61,7 @@ module.exports = function dockerExec(id, options, callback) {
             } catch (err) {
                 console.error('cant create log folder', err);
             }
-            var writeStream = fs.createWriteStream(`log/${options.name}/${moment().format('YYYY-MM-DD--HH-mm-ss')}`, function (err) {
+            let writeStream = fs.createWriteStream(`log/${options.name}/${moment().format('YYYY-MM-DD--HH-mm-ss')}`, function (err) {
                 if (err) console.error('cant create log file', err);
             });
             options.runningdata.output = '';
@@ -83,7 +83,7 @@ module.exports = function dockerExec(id, options, callback) {
             stream.on('end', () => {
                 writeStream.end();
 
-                var hrend = process.hrtime(hrstart);
+                let hrend = process.hrtime(hrstart);
                 options.runningdata.end = new Date();
 
                 clearTimeout(timeout);

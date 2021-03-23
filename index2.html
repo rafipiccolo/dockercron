@@ -57,22 +57,22 @@
             }
 
             function Liste() {
-                var [crons, setCrons] = useState([]);
-                var [current, setCurrent] = useState(null);
-                var [filter, setFilter] = useState({});
+                let [crons, setCrons] = useState([]);
+                let [current, setCurrent] = useState(null);
+                let [filter, setFilter] = useState({});
 
                 useRecursiveTimeout(() => {
                     (async () => {
                         const response = await fetch('/state');
-                        var data = await response.json();
+                        let data = await response.json();
 
                         // flatten the tree
-                        var results = [];
+                        let results = [];
                         Object.values(data).map((d) => results.push(...Object.values(d)));
                         setCrons(results);
 
                         if (filter) {
-                            var f = crons.filter((cron) => cron.containerId == filter.containerId && cron.name == filter.name);
+                            let f = crons.filter((cron) => cron.containerId == filter.containerId && cron.name == filter.name);
                             if (f) setCurrent(f[0]);
                             else setCurrent(null);
                         }

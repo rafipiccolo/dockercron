@@ -30,11 +30,11 @@ module.exports = function dockerExec(id, options, callback) {
         Env: [],
     };
     if (options.user) params.User = options.user;
-    container.exec(params, function (err, exec) {
+    container.exec(params, (err, exec) => {
         if (err) return safecallback(err);
 
         // start to execute
-        exec.start(function (err, stream) {
+        exec.start((err, stream) => {
             if (err) return safecallback(err);
 
             if (options.timeout) {
@@ -61,20 +61,20 @@ module.exports = function dockerExec(id, options, callback) {
             } catch (err) {
                 console.error('cant create log folder', err);
             }
-            let writeStream = fs.createWriteStream(`log/${options.name}/${moment().format('YYYY-MM-DD--HH-mm-ss')}`, function (err) {
+            let writeStream = fs.createWriteStream(`log/${options.name}/${moment().format('YYYY-MM-DD--HH-mm-ss')}`, (err) => {
                 if (err) console.error('cant create log file', err);
             });
             options.runningdata.output = '';
-            stdout.on('data', function (chunk) {
+            stdout.on('data', (chunk) => {
                 options.runningdata.output += chunk;
-                writeStream.write(chunk, function (err) {
+                writeStream.write(chunk, (err) => {
                     if (err) console.error('cant write logs for stdout', err);
                 });
             });
 
-            stderr.on('data', function (chunk) {
+            stderr.on('data', (chunk) => {
                 options.runningdata.output += chunk;
-                writeStream.write(chunk, function (err) {
+                writeStream.write(chunk, (err) => {
                     if (err) console.error('cant write logs for stderr', err);
                 });
             });

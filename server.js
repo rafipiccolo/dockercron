@@ -79,7 +79,7 @@ app.get('/data', async (req, res, next) => {
     }
 });
 
-app.get('/stats', function (req, res, next) {
+app.get('/stats', (req, res, next) => {
     return res.send(monitoring.getStatsBy(req.query.field || 'avg'));
 });
 
@@ -87,14 +87,14 @@ app.use(monitoring.notfoundmiddleware);
 app.use(monitoring.errormiddleware(app));
 
 const port = process.env.PORT || 3000;
-server.listen(port, function () {
+server.listen(port, () => {
     console.log(`ready to go on ${port}`);
 });
 // all crons
 let crons = {};
 
 // get all containers on startup and register all crons
-docker.listContainers(function (err, containers) {
+docker.listContainers((err, containers) => {
     if (err) throw err;
 
     containers.forEach((container) => {
@@ -103,12 +103,12 @@ docker.listContainers(function (err, containers) {
 });
 
 // on container event, recreate all crons
-docker.getEvents({}, function (err, stream) {
+docker.getEvents({}, (err, stream) => {
     if (err) throw err;
 
     let lineStream = new LineStream({ encoding: 'utf8' });
     stream.pipe(lineStream);
-    lineStream.on('data', function (chunk) {
+    lineStream.on('data', (chunk) => {
         let data = JSON.parse(chunk);
 
         // console.log('EVENT', data.id, data.Type, data.Action);
@@ -116,7 +116,7 @@ docker.getEvents({}, function (err, stream) {
         if (data.Type == 'container') {
             if (data.Action == 'start') {
                 let container = docker.getContainer(data.id);
-                container.inspect(function (err, containerdata) {
+                container.inspect((err, containerdata) => {
                     if (err) return console.error(err);
 
                     register(data.id, containerdata.Name, containerdata.Config.Labels);
@@ -187,7 +187,7 @@ function createCron(id, cron) {
 
     cron.job = new CronJob(
         cron.schedule,
-        function () {
+        (() => {
             verbose(`${cron.name}@${id.substr(0, 8)} exec ${cron.command}`);
 
             // check if already running for no overlap mode
@@ -215,7 +215,7 @@ function createCron(id, cron) {
                     { exitCode: data.exitCode, timeout: data.timeout, ms: data.ms }
                 );
             });
-        },
+        }),
         null,
         true,
         'Europe/Paris'

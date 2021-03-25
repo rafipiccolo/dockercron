@@ -187,7 +187,7 @@ function createCron(id, cron) {
 
     cron.job = new CronJob(
         cron.schedule,
-        (() => {
+        () => {
             verbose(`${cron.name}@${id.substr(0, 8)} exec ${cron.command}`);
 
             // check if already running for no overlap mode
@@ -215,7 +215,7 @@ function createCron(id, cron) {
                     { exitCode: data.exitCode, timeout: data.timeout, ms: data.ms }
                 );
             });
-        }),
+        },
         null,
         true,
         'Europe/Paris'

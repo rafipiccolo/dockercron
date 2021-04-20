@@ -3,6 +3,7 @@ let moment = require('moment');
 let fs = require('fs');
 let Stream = require('stream');
 let docker = new Docker({ socketPath: '/var/run/docker.sock' });
+let monitoring = require('./lib/monitoring.js');
 
 module.exports = function dockerExec(id, options, callback) {
     options.runningdata = options.runningdata || {};
@@ -41,11 +42,11 @@ module.exports = function dockerExec(id, options, callback) {
                 timeout = setTimeout(() => {
                     exec.inspect((err, data) => {
                         // if (err) return safecallback(err);
-                        if (err) return console.error(`cant inspect exec on ${id}`);
+                        if (err) return monitoring.log('error', 'dockerExec', `cant inspect exec on ${id} ${err.message}`, { err });
 
                         timeouted = 1;
                         dockerExec(id, { command: `kill ${data.Pid}` }, () => {
-                            if (err) return console.error(`cant kill process ${data.Pid}`);
+                            if (err) return monitoring.log('error', 'dockerExec', `cant kill process ${data.Pid} ${err.message}`, { err });
                         });
                     });
                 }, options.timeout * 1000);
@@ -59,23 +60,23 @@ module.exports = function dockerExec(id, options, callback) {
             try {
                 fs.mkdirSync(`log/${options.name}`, { recursive: true });
             } catch (err) {
-                console.error('cant create log folder', err);
+                monitoring.log('error', 'dockerExec', `cant create log folder ${err.message}`, { err });
             }
             let writeStream = fs.createWriteStream(`log/${options.name}/${moment().format('YYYY-MM-DD--HH-mm-ss')}`, (err) => {
-                if (err) console.error('cant create log file', err);
+                if (err) monitoring.log('error', 'dockerExec', `cant create log file ${err.message}`, { err });
             });
             options.runningdata.output = '';
             stdout.on('data', (chunk) => {
                 options.runningdata.output += chunk;
                 writeStream.write(chunk, (err) => {
-                    if (err) console.error('cant write logs for stdout', err);
+                    if (err) monitoring.log('error', 'dockerExec', `cant write logs for stdout ${err.message}`, { err });
                 });
             });
 
             stderr.on('data', (chunk) => {
                 options.runningdata.output += chunk;
                 writeStream.write(chunk, (err) => {
-                    if (err) console.error('cant write logs for stderr', err);
+                    if (err) monitoring.log('error', 'dockerExec', `cant write logs for stderr ${err.message}`, { err });
                 });
             });
 

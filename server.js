@@ -117,7 +117,7 @@ docker.getEvents({}, (err, stream) => {
             if (data.Action == 'start') {
                 let container = docker.getContainer(data.id);
                 container.inspect((err, containerdata) => {
-                    if (err) return console.error(err);
+                    if (err) return monitoring.log('error', 'events', `cant inspect container ${data.id} ${err.message}`, { err });
 
                     register(data.id, containerdata.Name, containerdata.Config.Labels);
                 });
@@ -201,7 +201,7 @@ function createCron(id, cron) {
                 cron.runningdata = { ...cron.runningdata, ...data };
 
                 cron.running = 0;
-                if (err) console.error(err);
+                if (err) monitoring.log('error', 'events', `cant dockerExec on ${id} ${err.message}`, { err });
 
                 console.log(
                     `${cron.name}@${id.substr(0, 8)} ms: ${data.ms} timeout:${data.timeout ? 1 : 0} exitCode: ${

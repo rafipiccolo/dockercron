@@ -27,11 +27,13 @@ Create a docker-compose.yml
         datelogger:
             image: busybox
             container_name: datelogger
-            command: sh -c "while true; do $$(echo date); sleep 1; done"
+            command: sh -c "while true; do id; sleep 1; done"
             restart: always
             labels:
                 - "cron.test.schedule=* * * * * *"
-                - "cron.test.command=echo hi"
+                - "cron.test.command=sleep 2 && echo soak && sleep 2 && echo soak2 && sleep 2 && echo soak3"
+                - "cron.test.timeout=5"
+                - "cron.test.no-overlap=true"
 
         dockercron:
             build: ./dockercron

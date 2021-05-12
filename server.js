@@ -1,17 +1,16 @@
 let CronJob = require('cron').CronJob;
-let Docker = require('dockerode');
 let fs = require('fs');
-let cors = require('cors');
 let moment = require('moment');
-let docker = new Docker({ socketPath: '/var/run/docker.sock' });
 let influxdb = require('./lib/influxdb');
-let dockerExec = require('./dockerExec.js');
+let dockerExec = require('./lib/dockerExec.js');
+let monitoring = require('./lib/monitoring.js');
+let Docker = require('dockerode');
 let LineStream = require('byline').LineStream;
 
 fs.mkdirSync('log', { recursive: true });
 
+let cors = require('cors');
 const express = require('express');
-let monitoring = require('./lib/monitoring.js');
 const app = express();
 app.set('trust proxy', process.env.TRUST_PROXY ?? 1);
 const http = require('http');
@@ -90,44 +89,81 @@ const port = process.env.PORT || 3000;
 server.listen(port, () => {
     console.log(`ready to go on ${port}`);
 });
-// all crons
+
+let docker = new Docker({
+    // protocol: 'ssh',
+    // host: `clone.gextra.net`,
+    // port: 22,
+    // username: 'root',
+    // sshOptions: {
+    //     privateKey: require('fs').readFileSync('/root/.ssh/id_rsa'),
+    // },
+});
+
+// process.env.SWARM = 'true';
+
 let crons = {};
 
-// get all containers on startup and register all crons
-docker.listContainers((err, containers) => {
-    if (err) throw err;
-
-    containers.forEach((container) => {
-        register(container.Id, container.Names[0], container.Labels);
-    });
-});
-
-// on container event, recreate all crons
-docker.getEvents({}, (err, stream) => {
-    if (err) throw err;
-
-    let lineStream = new LineStream({ encoding: 'utf8' });
-    stream.pipe(lineStream);
-    lineStream.on('data', (chunk) => {
-        let data = JSON.parse(chunk);
-
-        // console.log('EVENT', data.id, data.Type, data.Action);
-        // console.log('EVENTDETAIL', JSON.stringify(data));
-        if (data.Type == 'container') {
-            if (data.Action == 'start') {
-                let container = docker.getContainer(data.id);
-                container.inspect((err, containerdata) => {
-                    if (err) return monitoring.log('error', 'events', `cant inspect container ${data.id} ${err.message}`, { err });
-
-                    register(data.id, containerdata.Name, containerdata.Config.Labels);
-                });
-            } else if (data.Action == 'die' || data.Action == 'stop') {
-                register(data.id);
-            }
+(async () => {
+    // ----------
+    // MODE SWARM
+    // ----------
+    if (process.env.SWARM == '1' || process.env.SWARM == 'true') {
+        // list services and create each cron we find
+        const services = await docker.listServices();
+        for (let service of services) {
+            register(service.ID, service.Spec.Name, service.Spec.Labels);
         }
-    });
-});
 
+        // on service event, recreate all crons of that service
+        const stream = await docker.getEvents({});
+        let lineStream = new LineStream({ encoding: 'utf8' });
+        stream.pipe(lineStream);
+        lineStream.on('data', async (chunk) => {
+            let data = JSON.parse(chunk);
+
+            if (data.Type == 'service') {
+                if (data.Action == 'create') {
+                    let service = docker.getService(data.Actor.ID);
+                    const servicedata = await service.inspect();
+                    register(data.Actor.ID, servicedata.Spec.Name, servicedata.Spec.Labels);
+                } else if (data.Action == 'remove') {
+                    register(data.Actor.ID);
+                }
+            }
+        });
+    }
+    // --------------
+    // MODE NON SWARM
+    // --------------
+    else {
+        // list containers and create each cron we find
+        const containers = await docker.listContainers();
+        for (let container of containers) {
+            register(container.Id, container.Names[0], container.Labels);
+        }
+
+        // on container event, recreate all crons of that service
+        const stream = await docker.getEvents({});
+        let lineStream = new LineStream({ encoding: 'utf8' });
+        stream.pipe(lineStream);
+        lineStream.on('data', async (chunk) => {
+            let data = JSON.parse(chunk);
+
+            if (data.Type == 'container') {
+                if (data.Action == 'start') {
+                    let container = docker.getContainer(data.id);
+                    const containerdata = await container.inspect();
+                    register(data.id, containerdata.Name, containerdata.Config.Labels);
+                } else if (data.Action == 'die' || data.Action == 'stop') {
+                    register(data.id);
+                }
+            }
+        });
+    }
+})();
+
+//
 // labels from docker compose
 //
 // labels:
@@ -144,6 +180,13 @@ docker.getEvents({}, (err, stream) => {
 // => parsed
 //
 // { test: { name: 'test', command: 'echo raf', schedule: '* * * * * *' } }
+//
+// function parameters :
+// id :
+//   it is the serviceId or the containerId
+//   it is used as a key to group crons
+// name :
+//   the service Name or the containerName
 //
 function register(id, name, labels) {
     labels = labels || {};
@@ -163,8 +206,8 @@ function register(id, name, labels) {
             crons[id] = crons[id] || {};
             crons[id][cronname] = crons[id][cronname] || {};
             crons[id][cronname][option] = value;
-            crons[id][cronname].containerId = id;
-            crons[id][cronname].containerName = name;
+            crons[id][cronname].serviceId = id;
+            crons[id][cronname].serviceName = name;
             crons[id][cronname].name = cronname;
             if (option == 'command') nb++;
         }
@@ -172,39 +215,75 @@ function register(id, name, labels) {
 
     verbose(`${id.substr(0, 8)} found ${nb} cronjobs`);
 
-    // start all detected crons
-    addAllCronsForContainer(id);
-}
-
-function addAllCronsForContainer(id) {
+    // create all detected crons
     for (let name in crons[id]) {
         createCron(id, crons[id][name]);
     }
 }
 
+// function parameters :
+// id :
+//   it is the serviceId or the containerId
 function createCron(id, cron) {
     console.log(`${cron.name}@${id.substr(0, 8)} install ${cron.schedule} ${cron.command}`);
 
     cron.job = new CronJob(
         cron.schedule,
-        () => {
+        async () => {
             verbose(`${cron.name}@${id.substr(0, 8)} exec ${cron.command}`);
 
             // check if already running for no overlap mode
             if ((cron['no-overlap'] == 'true' || cron['no-overlap'] == '1') && cron.running) {
                 return verbose(`${cron.name}@${id.substr(0, 8)} skip already running`);
             }
-            cron.running = 1;
 
             // execute
-            dockerExec(id, cron, async (err, data) => {
-                cron.runningdata = { ...cron.runningdata, ...data };
+            let containerIdtoexec = id;
+            let dockerforexec = docker;
+            if (process.env.SWARM == '1' || process.env.SWARM == 'true') {
+                // get the first task of the service (docker service ps)
+                const tasks = await docker.listTasks({
+                    filters: {
+                        service: [cron.serviceName],
+                        'desired-state': ['running'],
+                    },
+                });
+                let infoforexec = null;
+                if (tasks.length) {
+                    let task = tasks[0];
+                    const node = docker.getNode(task.NodeID);
+                    const nodedata = await node.inspect();
+                    console.log(`try to run on ${cron.serviceName}.${task.Slot}.${task.ID}@${nodedata.Description.Hostname}`);
+                    infoforexec = {
+                        serviceName: cron.serviceName,
+                        slot: task.Slot,
+                        taskId: task.ID,
+                        node: nodedata.Description.Hostname,
+                    };
+                }
+                if (!infoforexec) return verbose(`${cron.name}@${id.substr(0, 8)} no running container found`);
 
+                containerIdtoexec = `${infoforexec.serviceName}.${infoforexec.slot}.${infoforexec.taskId}`;
+                dockerforexec = new Docker({
+                    protocol: 'ssh',
+                    host: infoforexec.node,
+                    port: 22,
+                    username: 'root',
+                    sshOptions: {
+                        privateKey: require('fs').readFileSync('/root/.ssh/id_rsa'),
+                    },
+                });
+            }
+
+            cron.running = 1;
+            dockerExec(dockerforexec, containerIdtoexec, cron, async (err, data) => {
+                cron.runningdata = { ...cron.runningdata, ...data };
                 cron.running = 0;
                 if (err) monitoring.log('error', 'events', `cant dockerExec on ${id} ${err.message}`, { err });
 
+                let smallcontainerId = containerIdtoexec.includes('.') ? containerIdtoexec : containerIdtoexec.substr(0, 8);
                 console.log(
-                    `${cron.name}@${id.substr(0, 8)} ms: ${data.ms} timeout:${data.timeout ? 1 : 0} exitCode: ${
+                    `${cron.name}@${smallcontainerId} ms: ${data.ms} timeout:${data.timeout ? 1 : 0} exitCode: ${
                         data.exitCode
                     } output: ${cron.runningdata.output.trim()}`
                 );

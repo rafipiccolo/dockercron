@@ -17,6 +17,10 @@ const http = require('http');
 const server = http.Server(app);
 monitoring.gracefulShutdown(server, app);
 
+app.get('/favicon.ico', (req, res) => {
+    res.sendFile(`${__dirname}/web/img/favicon.png`);
+});
+
 app.use(cors());
 
 app.use(monitoring.idmiddleware);

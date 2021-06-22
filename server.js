@@ -268,7 +268,6 @@ function createCron(id, cron) {
                 if (!infoforexec) return verbose(`${cron.name}@${id.substr(0, 8)} no running container found`);
 
                 containerIdtoexec = `${infoforexec.serviceName}.${infoforexec.slot}.${infoforexec.taskId}`;
-                console.log(`run ${containerIdtoexec} on ${infoforexec.node}`);
                 dockerforexec = new Docker({
                     protocol: 'ssh',
                     host: infoforexec.node,
@@ -278,7 +277,6 @@ function createCron(id, cron) {
                         privateKey: require('fs').readFileSync('/root/.ssh/id_rsa'),
                     },
                 });
-                console.log(`new done`);
             }
 
             cron.running = 1;

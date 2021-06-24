@@ -1,7 +1,7 @@
 let Docker = require('dockerode');
 let docker = new Docker({
     protocol: 'ssh',
-    host: '2i.raphaelpiccolo.com',
+    host: '192.111.111.111',
     port: 22,
     username: 'root',
     sshOptions: {
@@ -20,5 +20,6 @@ let params = {
 };
 console.log('exec');
 container.exec(params, (err, exec) => {
+    console.log(err);
     console.log('exec done');
 });

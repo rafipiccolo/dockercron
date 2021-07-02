@@ -127,7 +127,7 @@ let crons = {};
             let data = JSON.parse(chunk);
 
             if (data.Type == 'service') {
-                if (data.Action == 'create') {
+                if (data.Action == 'create' || data.Action == 'update') {
                     let service = docker.getService(data.Actor.ID);
                     const servicedata = await service.inspect();
                     register(data.Actor.ID, servicedata.Spec.Name, servicedata.Spec.Labels);

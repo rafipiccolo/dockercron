@@ -26,6 +26,7 @@ app.use(cors());
 app.use(monitoring.idmiddleware);
 app.use(monitoring.statmiddleware);
 app.use(monitoring.logmiddleware);
+app.use(monitoring.timermiddleware);
 app.use(monitoring.multerCleanMiddleware);
 
 app.get('/', async (req, res, next) => {

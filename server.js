@@ -245,6 +245,7 @@ function createCron(id, cron) {
             // execute
             let containerIdtoexec = id;
             let dockerforexec = docker;
+            let sshconfig = '';
             if (process.env.SWARM == '1' || process.env.SWARM == 'true') {
                 // get the first task of the service (docker service ps)
                 const tasks = await docker.listTasks({
@@ -278,10 +279,11 @@ function createCron(id, cron) {
                         privateKey: require('fs').readFileSync('/root/.ssh/id_rsa'),
                     },
                 });
+                sshconfig = `root@${infoforexec.node}`;
             }
 
             cron.running = 1;
-            dockerExec(dockerforexec, containerIdtoexec, cron, async (err, data) => {
+            dockerExec(dockerforexec, sshconfig, containerIdtoexec, cron, async (err, data) => {
                 cron.runningdata = { ...cron.runningdata, ...data };
                 cron.running = 0;
                 if (err) monitoring.log('error', 'events', `cant dockerExec on ${id} ${err.message}`, { err });

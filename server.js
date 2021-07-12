@@ -246,40 +246,45 @@ function createCron(id, cron) {
             let containerIdtoexec = id;
             let dockerforexec = docker;
             let sshconfig = '';
-            if (process.env.SWARM == '1' || process.env.SWARM == 'true') {
-                // get the first task of the service (docker service ps)
-                const tasks = await docker.listTasks({
-                    filters: {
-                        service: [cron.serviceName],
-                        'desired-state': ['running'],
-                    },
-                });
-                let infoforexec = null;
-                if (tasks.length) {
-                    let task = tasks[0];
-                    const node = docker.getNode(task.NodeID);
-                    const nodedata = await node.inspect();
-                    console.log(`try to run on ${cron.serviceName}.${task.Slot}.${task.ID}@${nodedata.Description.Hostname}`);
-                    infoforexec = {
-                        serviceName: cron.serviceName,
-                        slot: task.Slot,
-                        taskId: task.ID,
-                        node: nodedata.Description.Hostname,
-                    };
-                }
-                if (!infoforexec) return verbose(`${cron.name}@${id.substr(0, 8)} no running container found`);
+            try {
+                if (process.env.SWARM == '1' || process.env.SWARM == 'true') {
+                    // get the first task of the service (docker service ps)
+                    const tasks = await docker.listTasks({
+                        filters: {
+                            service: [cron.serviceName],
+                            'desired-state': ['running'],
+                        },
+                    });
+                    let infoforexec = null;
+                    if (tasks.length) {
+                        let task = tasks[0];
+                        const node = docker.getNode(task.NodeID);
+                        const nodedata = await node.inspect();
+                        console.log(`try to run on ${cron.serviceName}.${task.Slot}.${task.ID}@${nodedata.Description.Hostname}`);
+                        infoforexec = {
+                            serviceName: cron.serviceName,
+                            slot: task.Slot,
+                            taskId: task.ID,
+                            node: nodedata.Description.Hostname,
+                        };
+                    }
+                    if (!infoforexec) return verbose(`${cron.name}@${id.substr(0, 8)} no running container found`);
 
-                containerIdtoexec = `${infoforexec.serviceName}.${infoforexec.slot}.${infoforexec.taskId}`;
-                dockerforexec = new Docker({
-                    protocol: 'ssh',
-                    host: infoforexec.node,
-                    port: 22,
-                    username: 'root',
-                    sshOptions: {
-                        privateKey: require('fs').readFileSync('/root/.ssh/id_rsa'),
-                    },
-                });
-                sshconfig = `root@${infoforexec.node}`;
+                    containerIdtoexec = `${infoforexec.serviceName}.${infoforexec.slot}.${infoforexec.taskId}`;
+                    dockerforexec = new Docker({
+                        protocol: 'ssh',
+                        host: infoforexec.node,
+                        port: 22,
+                        username: 'root',
+                        sshOptions: {
+                            privateKey: require('fs').readFileSync('/root/.ssh/id_rsa'),
+                        },
+                    });
+                    sshconfig = `root@${infoforexec.node}`;
+                }
+            } catch (err) {
+                monitoring.log('error', 'events', `cant get tasks/nodes on ${id} from ${cron.name} : ${err.message}`, { err });
+                return;
             }
 
             cron.running = 1;

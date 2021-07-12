@@ -290,7 +290,7 @@ function createCron(id, cron) {
 
                 let smallcontainerId = containerIdtoexec.includes('.') ? containerIdtoexec : containerIdtoexec.substr(0, 8);
                 console.log(
-                    `${cron.name}@${smallcontainerId} ms: ${data.ms} timeout:${data.timeout ? 1 : 0} exitCode: ${
+                    `${cron.name}@${smallcontainerId} ms: ${data.ms} timeout: ${data.timeout ? 1 : 0} exitCode: ${
                         data.exitCode
                     } output: ${cron.runningdata.output.trim()}`
                 );

@@ -122,6 +122,10 @@ let crons = {};
 
         // on service event, recreate all crons of that service
         const stream = await docker.getEvents({});
+        stream.on('error', (err) => {
+            console.log('docker eventstream error', err);
+            process.exit(0);
+        });
         let lineStream = new LineStream({ encoding: 'utf8' });
         stream.pipe(lineStream);
         lineStream.on('data', async (chunk) => {
@@ -150,6 +154,10 @@ let crons = {};
 
         // on container event, recreate all crons of that service
         const stream = await docker.getEvents({});
+        stream.on('error', (err) => {
+            console.log('docker eventstream error', err);
+            process.exit(0);
+        });
         let lineStream = new LineStream({ encoding: 'utf8' });
         stream.pipe(lineStream);
         lineStream.on('data', async (chunk) => {

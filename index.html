@@ -18,58 +18,140 @@
     <body>
         <div id="root"></div>
         <script type="text/babel">
+            const useState = React.useState;
+            const useEffect = React.useEffect;
+            const useRef = React.useRef;
+
+            // callback can be a promise or a normal function
+            function useRecursiveTimeout(callback, delay) {
+                const savedCallback = useRef(callback);
+
+                // Remember the latest callback.
+                useEffect(() => {
+                    savedCallback.current = callback;
+                }, [callback]);
+
+                // Set up the timeout loop.
+                useEffect(() => {
+                    let id;
+                    function tick() {
+                        const ret = savedCallback.current();
+
+                        if (ret instanceof Promise) {
+                            ret.then(() => {
+                                if (delay !== null) {
+                                    id = setTimeout(tick, delay);
+                                }
+                            });
+                        } else {
+                            if (delay !== null) {
+                                id = setTimeout(tick, delay);
+                            }
+                        }
+                    }
+                    if (delay !== null) {
+                        id = setTimeout(tick, delay);
+                        return () => id && clearTimeout(id);
+                    }
+                }, [delay]);
+            }
+
             function Liste() {
-                let [crons, setCrons] = React.useState([]);
-                let [error, setError] = React.useState(0);
+                let [crons, setCrons] = useState([]);
+                let [current, setCurrent] = useState(null);
+                let [filter, setFilter] = useState({});
 
-                React.useEffect(() => {
+                useRecursiveTimeout(() => {
                     (async () => {
-                        const response = await fetch('/data?error=' + error);
-                        const data = await response.json();
+                        const response = await fetch('/state');
+                        let data = await response.json();
 
-                        setCrons(data);
+                        // flatten the tree
+                        let results = [];
+                        Object.values(data).map((d) => results.push(...Object.values(d)));
+                        setCrons(results);
+
+                        if (filter) {
+                            let f = crons.filter((cron) => cron.containerId == filter.containerId && cron.name == filter.name);
+                            if (f) setCurrent(f[0]);
+                            else setCurrent(null);
+                        }
                     })();
-                }, [error]);
+                }, 1000);
 
                 return (
                     <>
-                        <label style={{ color: 'white' }}>
-                            <input
-                                type="checkbox"
-                                checked={error}
-                                onChange={() => {
-                                    setError(error ? 0 : 1);
-                                }}
-                            />{' '}
-                            Voir que les erreurs
-                        </label>
-
                         <table className="table table-dark table-hover table-sm">
                             <tbody>
                                 <tr>
-                                    <th style={{ width: 100 }}>timestamp</th>
-                                    <th style={{ width: 100 }}>cronname</th>
-                                    <th style={{ width: 100 }}>exitCode</th>
-                                    <th style={{ width: 100 }}>ms</th>
+                                    <th style={{ width: 100 }}>containerId/serviceId</th>
+                                    <th style={{ width: 100 }}>containerName</th>
+                                    <th style={{ width: 100 }}>name</th>
+                                    <th>command</th>
+                                    <th style={{ width: 100 }}>no overlap</th>
+                                    <th style={{ width: 100 }}>schedule</th>
                                     <th style={{ width: 100 }}>timeout</th>
+                                    <th style={{ width: 100 }}>running</th>
                                 </tr>
                                 {crons.map((cron) => (
-                                    <tr key={Math.random() + ''}>
-                                        <td>{moment(cron.time).format('YYYY-MM-DD HH:mm:ss.SSS')}</td>
-                                        <td>{cron.cronname}</td>
+                                    <tr
+                                        key={cron.containerId + cron.name}
+                                        className={cron.containerId == filter.containerId && cron.name == filter.name ? 'table-active' : ''}
+                                    >
+                                        <td>{(cron.containerId || cron.serviceId).substr(0, 8)}</td>
+                                        <td>{cron.containerName || cron.serviceName}</td>
+                                        <td>{cron.name}</td>
+                                        <td>{cron.command}</td>
+                                        <td>{cron['no-overlap']}</td>
+                                        <td>{cron.schedule}</td>
+                                        <td>{cron.timeout}</td>
+                                        <td>{cron.running ? 'true' : 'false'}</td>
                                         <td>
-                                            {cron.exitCode != 0 ? (
-                                                <span style={{ color: 'red', fontSize: '20px' }}>{cron.exitCode}</span>
-                                            ) : (
-                                                <span style={{ color: 'green', fontSize: '20px' }}>{cron.exitCode}</span>
-                                            )}
+                                            <button
+                                                onClick={() => {
+                                                    setFilter({ containerId: cron.containerId, name: cron.name });
+                                                }}
+                                            >
+                                                Voir
+                                            </button>
                                         </td>
-                                        <td>{cron.ms}</td>
-                                        <td>{cron.timeout ? 'timeout' : ''}</td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
+                        <div style={{ color: 'white', background: '#333333', padding: 10 }}>
+                            {current ? (
+                                <>
+                                    <p>
+                                        {current.containerName} | {current.name} | {current.running ? 'RUNNING' : '-'}
+                                    </p>
+                                    {current.runningdata ? (
+                                        <>
+                                            <p>
+                                                start:{' '}
+                                                {current.runningdata.start
+                                                    ? moment(current.runningdata.start).format('YYYY-MM-DD HH:mm:ss.SSS')
+                                                    : null}
+                                                <br />
+                                                end:{' '}
+                                                {current.runningdata.end ? moment(current.runningdata.end).format('YYYY-MM-DD HH:mm:ss.SSS') : null}
+                                                <br />
+                                                ms: {current.runningdata.ms}
+                                                <br />
+                                                exitCode: {current.runningdata.exitCode}
+                                                <br />
+                                                timeout: {current.runningdata.timeout ? 'true' : 'false'}
+                                                <br />
+                                                runon: {current.runningdata.runon}
+                                                <br />
+                                                output:
+                                                <pre style={{ color: 'white' }}>{current.runningdata.output}</pre>
+                                            </p>
+                                        </>
+                                    ) : null}
+                                </>
+                            ) : null}
+                        </div>
                     </>
                 );
             }

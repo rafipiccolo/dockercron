@@ -30,7 +30,7 @@ app.use(monitoring.timermiddleware);
 app.use(monitoring.multerCleanMiddleware);
 
 app.get('/', async (req, res, next) => {
-    res.sendFile(`${__dirname}/index2.html`);
+    res.sendFile(`${__dirname}/index.html`);
 });
 
 function getCleanCrons() {

@@ -123,7 +123,7 @@ let crons = {};
         // on service event, recreate all crons of that service
         const stream = await docker.getEvents({});
         stream.on('error', (err) => {
-            console.log('docker eventstream error', err);
+            monitoring.log('error', 'events', `docker eventstream error : ${err.message}`, { err });
             process.exit(0);
         });
         let lineStream = new LineStream({ encoding: 'utf8' });
@@ -155,7 +155,7 @@ let crons = {};
         // on container event, recreate all crons of that service
         const stream = await docker.getEvents({});
         stream.on('error', (err) => {
-            console.log('docker eventstream error', err);
+            monitoring.log('error', 'events', `docker eventstream error : ${err.message}`, { err });
             process.exit(0);
         });
         let lineStream = new LineStream({ encoding: 'utf8' });
@@ -268,7 +268,7 @@ function createCron(id, cron) {
                         let task = tasks[0];
                         const node = docker.getNode(task.NodeID);
                         const nodedata = await node.inspect();
-                        console.log(`try to run on ${cron.serviceName}.${task.Slot}.${task.ID}@${nodedata.Description.Hostname}`);
+                        // console.log(`try to run on ${cron.serviceName}.${task.Slot}.${task.ID}@${nodedata.Description.Hostname}`);
                         infoforexec = {
                             serviceName: cron.serviceName,
                             slot: task.Slot,
@@ -303,9 +303,9 @@ function createCron(id, cron) {
 
                 let smallcontainerId = containerIdtoexec.includes('.') ? containerIdtoexec : containerIdtoexec.substr(0, 8);
                 console.log(
-                    `${cron.name}@${smallcontainerId} ms: ${data.ms} timeout: ${data.timeout ? 1 : 0} exitCode: ${
-                        data.exitCode
-                    } output: ${cron.runningdata.output.trim()}`
+                    `${cron.name}@${smallcontainerId} ms: ${data.ms} timeout: ${data.timeout ? 1 : 0} exitCode: ${data.exitCode} output: ${(
+                        cron.runningdata.output || ''
+                    ).trim()}`
                 );
 
                 influxdb.insert(

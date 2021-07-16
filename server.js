@@ -296,8 +296,10 @@ function createCron(id, cron) {
             }
 
             cron.running = 1;
+            cron.runningdata = cron.runningdata || {};
+            cron.runningdata.runon = containerIdtoexec;
             dockerExec(dockerforexec, sshconfig, containerIdtoexec, cron, async (err, data) => {
-                cron.runningdata = { ...cron.runningdata, ...data };
+                cron.runningdata = { runon: containerIdtoexec, ...cron.runningdata, ...data };
                 cron.running = 0;
                 if (err) monitoring.log('error', 'events', `cant dockerExec on ${id} ${err.message}`, { err });
 

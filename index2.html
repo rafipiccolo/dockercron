@@ -84,7 +84,7 @@
                         <table className="table table-dark table-hover table-sm">
                             <tbody>
                                 <tr>
-                                    <th style={{ width: 100 }}>containerId</th>
+                                    <th style={{ width: 100 }}>containerId/serviceId</th>
                                     <th style={{ width: 100 }}>containerName</th>
                                     <th style={{ width: 100 }}>name</th>
                                     <th>command</th>
@@ -98,8 +98,8 @@
                                         key={cron.containerId + cron.name}
                                         className={cron.containerId == filter.containerId && cron.name == filter.name ? 'table-active' : ''}
                                     >
-                                        <td>{cron.containerId.substr(0, 8)}</td>
-                                        <td>{cron.containerName}</td>
+                                        <td>{(cron.containerId || cron.serviceId).substr(0, 8)}</td>
+                                        <td>{cron.containerName || cron.serviceName}</td>
                                         <td>{cron.name}</td>
                                         <td>{cron.command}</td>
                                         <td>{cron['no-overlap']}</td>
@@ -142,9 +142,11 @@
                                                 <br />
                                                 timeout: {current.runningdata.timeout ? 'true' : 'false'}
                                                 <br />
+                                                runon:
+                                                <pre style={{ color: 'white' }}>{JSON.stringify(current.runningdata.runon, null, 4)}</pre>
                                                 output:
+                                                <pre style={{ color: 'white' }}>{current.runningdata.output}</pre>
                                             </p>
-                                            <pre style={{ color: 'white' }}>{current.runningdata.output}</pre>
                                         </>
                                     ) : null}
                                 </>

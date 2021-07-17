@@ -7,6 +7,10 @@ let monitoring = require('./lib/monitoring.js');
 let Docker = require('dockerode');
 let LineStream = require('byline').LineStream;
 
+let util = require('util');
+const glob = require('glob');
+const globPromise = util.promisify(glob);
+
 fs.mkdirSync('log', { recursive: true });
 
 let cors = require('cors');
@@ -17,7 +21,7 @@ const http = require('http');
 const server = http.Server(app);
 monitoring.gracefulShutdown(server, app);
 
-app.get('/favicon.ico', (req, res) => {
+app.get('/favicon.ico', (req, res, next) => {
     res.sendFile(`${__dirname}/web/img/favicon.png`);
 });
 
@@ -51,19 +55,43 @@ function getCleanCrons() {
     return results;
 }
 
-app.get('/state', (req, res) => {
+app.get('/state', async (req, res, next) => {
     let results = getCleanCrons();
     return res.send(JSON.stringify(results, null, 4));
 });
 
-app.get('/state/:id', (req, res) => {
+app.get('/state/:id', async (req, res, next) => {
     let results = getCleanCrons();
     return res.send(JSON.stringify(results[req.params.id], null, 4));
 });
 
-app.get('/state/:id/:name', (req, res) => {
+app.get('/state/:id/:name', async (req, res, next) => {
     let results = getCleanCrons();
     return res.send(JSON.stringify(results[req.params.id][req.params.name], null, 4));
+});
+
+app.get('/logs', async (req, res, next) => {
+    try {
+        res.send(await globPromise(`log/*`));
+    } catch (err) {
+        next(err);
+    }
+});
+
+app.get('/logs/:name', async (req, res, next) => {
+    try {
+        res.send(await globPromise(`log/${req.params.name}/*`));
+    } catch (err) {
+        next(err);
+    }
+});
+
+app.get('/logs/:name/:file', async (req, res, next) => {
+    try {
+        res.send(await fs.promises.readFile(`log/${req.params.name}/${req.params.file}`));
+    } catch (err) {
+        next(err);
+    }
 });
 
 app.get('/data', async (req, res, next) => {
@@ -323,6 +351,7 @@ function createCron(id, cron) {
     );
 
     cron.job.start();
+    cron.nextDate = cron.job.nextDates();
 }
 
 function removeAllCronsForContainer(id) {

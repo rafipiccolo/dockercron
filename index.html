@@ -84,7 +84,7 @@
                         <table className="table table-dark table-hover table-sm">
                             <tbody>
                                 <tr>
-                                    <th style={{ width: 100 }}>containerId/serviceId</th>
+                                    <th style={{ width: 100 }}>containerId</th>
                                     <th style={{ width: 100 }}>containerName</th>
                                     <th style={{ width: 100 }}>name</th>
                                     <th>command</th>
@@ -92,6 +92,7 @@
                                     <th style={{ width: 100 }}>schedule</th>
                                     <th style={{ width: 100 }}>timeout</th>
                                     <th style={{ width: 100 }}>running</th>
+                                    <th style={{ width: 150 }}>actions</th>
                                 </tr>
                                 {crons.map((cron) => (
                                     <tr
@@ -105,15 +106,26 @@
                                         <td>{cron['no-overlap']}</td>
                                         <td>{cron.schedule}</td>
                                         <td>{cron.timeout}</td>
-                                        <td>{cron.running ? 'true' : 'false'}</td>
+                                        <td>
+                                            {cron.running ? (
+                                                <span class="badge badge-success">running</span>
+                                            ) : (
+                                                <span class="badge badge-secondary">next: {moment(cron.nextDate).format('HH:mm:ss')}</span>
+                                            )}
+                                        </td>
                                         <td>
                                             <button
+                                                class="btn btn-primary"
                                                 onClick={() => {
                                                     setFilter({ containerId: cron.containerId, name: cron.name });
                                                 }}
                                             >
                                                 Voir
                                             </button>
+
+                                            <a href={'/logs/' + cron.name} class="btn btn-secondary">
+                                                logs
+                                            </a>
                                         </td>
                                     </tr>
                                 ))}

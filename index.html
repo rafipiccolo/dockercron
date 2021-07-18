@@ -56,9 +56,32 @@
                 }, [delay]);
             }
 
+            function Modal(props) {
+                return (
+                    <div className="modal fade show" role="dialog" style={{ display: 'block' }}>
+                        <div className="modal-dialog modal-xl modal-dialog-scrollable" role="document">
+                            <div className="modal-content" style={{ background: '#333333' }}>
+                                <div className="modal-header">
+                                    <h5 className="modal-title">{props.title}</h5>
+                                    <button type="button" className="close" data-dismiss="modal" aria-label="Close" onClick={props.onClose}>
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div className="modal-body">{props.children}</div>
+                                <div className="modal-footer">
+                                    <button type="button" className="btn btn-secondary" data-dismiss="modal" onClick={props.onClose}>
+                                        Close
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
             function Liste() {
                 let [crons, setCrons] = useState([]);
-                let [current, setCurrent] = useState(null);
+                // let [current, setCurrent] = useState(null);
                 let [filter, setFilter] = useState({});
 
                 useRecursiveTimeout(() => {
@@ -71,11 +94,11 @@
                         Object.values(data).map((d) => results.push(...Object.values(d)));
                         setCrons(results);
 
-                        if (filter) {
-                            let f = crons.filter((cron) => cron.containerId == filter.containerId && cron.name == filter.name);
-                            if (f) setCurrent(f[0]);
-                            else setCurrent(null);
-                        }
+                        // if (filter) {
+                        //     let f = crons.filter((cron) => cron.containerId == filter.containerId && cron.name == filter.name);
+                        //     if (f) setCurrent(f[0]);
+                        //     else setCurrent(null);
+                        // }
                     })();
                 }, 1000);
 
@@ -108,14 +131,14 @@
                                         <td>{cron.timeout}</td>
                                         <td>
                                             {cron.running ? (
-                                                <span class="badge badge-success">running</span>
+                                                <span className="badge badge-success">running</span>
                                             ) : (
-                                                <span class="badge badge-secondary">next: {moment(cron.nextDate).format('HH:mm:ss')}</span>
+                                                <span className="badge badge-secondary">next: {moment(cron.nextDate).format('HH:mm:ss')}</span>
                                             )}
                                         </td>
                                         <td>
                                             <button
-                                                class="btn btn-primary"
+                                                className="btn btn-primary"
                                                 onClick={() => {
                                                     setFilter({ containerId: cron.containerId, name: cron.name });
                                                 }}
@@ -123,47 +146,45 @@
                                                 Voir
                                             </button>
 
-                                            <a href={'/logs/' + cron.name} class="btn btn-secondary">
-                                                logs
-                                            </a>
+                                            {cron.containerId == filter.containerId && cron.name == filter.name ? (
+                                                <Modal
+                                                    title={cron.containerName + ' | ' + cron.name + ' | ' + (cron.running ? 'RUNNING' : '-')}
+                                                    onClose={() => {
+                                                        setFilter({});
+                                                    }}
+                                                >
+                                                    {cron.runningdata ? (
+                                                        <>
+                                                            <div>
+                                                                <b>start</b>:{' '}
+                                                                {cron.runningdata.start
+                                                                    ? moment(cron.runningdata.start).format('YYYY-MM-DD HH:mm:ss.SSS')
+                                                                    : null}
+                                                                <br />
+                                                                <b>end</b>:{' '}
+                                                                {cron.runningdata.end
+                                                                    ? moment(cron.runningdata.end).format('YYYY-MM-DD HH:mm:ss.SSS')
+                                                                    : null}
+                                                                <br />
+                                                                <b>ms</b>: {cron.runningdata.ms}
+                                                                <br />
+                                                                <b>exitCode</b>: {cron.runningdata.exitCode}
+                                                                <br />
+                                                                <b>timeout</b>: {cron.runningdata.timeout ? 'true' : 'false'}
+                                                                <br />
+                                                                <b>runon</b>: {cron.runningdata.runon}
+                                                                <br />
+                                                                <b>output</b>:<pre style={{ color: 'white' }}>{cron.runningdata.output}</pre>
+                                                            </div>
+                                                        </>
+                                                    ) : null}
+                                                </Modal>
+                                            ) : null}
                                         </td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
-                        <div style={{ color: 'white', background: '#333333', padding: 10 }}>
-                            {current ? (
-                                <>
-                                    <p>
-                                        {current.containerName} | {current.name} | {current.running ? 'RUNNING' : '-'}
-                                    </p>
-                                    {current.runningdata ? (
-                                        <>
-                                            <p>
-                                                start:{' '}
-                                                {current.runningdata.start
-                                                    ? moment(current.runningdata.start).format('YYYY-MM-DD HH:mm:ss.SSS')
-                                                    : null}
-                                                <br />
-                                                end:{' '}
-                                                {current.runningdata.end ? moment(current.runningdata.end).format('YYYY-MM-DD HH:mm:ss.SSS') : null}
-                                                <br />
-                                                ms: {current.runningdata.ms}
-                                                <br />
-                                                exitCode: {current.runningdata.exitCode}
-                                                <br />
-                                                timeout: {current.runningdata.timeout ? 'true' : 'false'}
-                                                <br />
-                                                runon: {current.runningdata.runon}
-                                                <br />
-                                                output:
-                                                <pre style={{ color: 'white' }}>{current.runningdata.output}</pre>
-                                            </p>
-                                        </>
-                                    ) : null}
-                                </>
-                            ) : null}
-                        </div>
                     </>
                 );
             }

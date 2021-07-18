@@ -70,14 +70,6 @@ app.get('/state/:id/:name', async (req, res, next) => {
     return res.send(JSON.stringify(results[req.params.id][req.params.name], null, 4));
 });
 
-app.get('/logs', async (req, res, next) => {
-    try {
-        res.send(await globPromise(`log/*`));
-    } catch (err) {
-        next(err);
-    }
-});
-
 app.get('/logs/:name', async (req, res, next) => {
     try {
         res.send(await globPromise(`log/${req.params.name}/*`));
@@ -329,6 +321,8 @@ function createCron(id, cron) {
             dockerExec(dockerforexec, sshconfig, containerIdtoexec, cron, async (err, data) => {
                 cron.runningdata = { runon: containerIdtoexec, ...cron.runningdata, ...data };
                 cron.running = 0;
+                cron.nextDate = cron.job.nextDates();
+
                 if (err) monitoring.log('error', 'events', `cant dockerExec on ${id} ${err.message}`, { err });
 
                 let smallcontainerId = containerIdtoexec.includes('.') ? containerIdtoexec : containerIdtoexec.substr(0, 8);

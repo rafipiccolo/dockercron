@@ -148,7 +148,13 @@
 
                                             {cron.containerId == filter.containerId && cron.name == filter.name ? (
                                                 <Modal
-                                                    title={cron.containerName + ' | ' + cron.name + ' | ' + (cron.running ? 'RUNNING' : '-')}
+                                                    title={
+                                                        (cron.containerName || cron.serviceName) +
+                                                        ' | ' +
+                                                        cron.name +
+                                                        ' | ' +
+                                                        (cron.running ? 'RUNNING' : '-')
+                                                    }
                                                     onClose={() => {
                                                         setFilter({});
                                                     }}

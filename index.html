@@ -81,7 +81,7 @@
 
             function Liste() {
                 let [crons, setCrons] = useState([]);
-                // let [current, setCurrent] = useState(null);
+                let [logs, setLogs] = useState([]);
                 let [filter, setFilter] = useState({});
 
                 useRecursiveTimeout(() => {
@@ -93,14 +93,15 @@
                         let results = [];
                         Object.values(data).map((d) => results.push(...Object.values(d)));
                         setCrons(results);
-
-                        // if (filter) {
-                        //     let f = crons.filter((cron) => cron.containerId == filter.containerId && cron.name == filter.name);
-                        //     if (f) setCurrent(f[0]);
-                        //     else setCurrent(null);
-                        // }
                     })();
                 }, 1000);
+
+                async function getLogs(name) {
+                    setLogs([]);
+                    const response = await fetch('/log/' + name);
+                    let data = await response.json();
+                    setLogs(data);
+                }
 
                 return (
                     <>
@@ -157,8 +158,34 @@
                                                     }
                                                     onClose={() => {
                                                         setFilter({});
+                                                        setLogs([]);
                                                     }}
                                                 >
+                                                    <button
+                                                        className="btn btn-primary"
+                                                        onClick={() => {
+                                                            getLogs(cron.name);
+                                                        }}
+                                                    >
+                                                        logs
+                                                    </button>
+                                                    <button
+                                                        className="btn btn-secondary"
+                                                        onClick={() => {
+                                                            setLogs([]);
+                                                        }}
+                                                    >
+                                                        close
+                                                    </button>
+
+                                                    {logs.map((log) => (
+                                                        <div>
+                                                            <a href={log} target="_blank">
+                                                                {log}
+                                                            </a>
+                                                        </div>
+                                                    ))}
+
                                                     {cron.runningdata ? (
                                                         <>
                                                             <div>

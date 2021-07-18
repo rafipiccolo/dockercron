@@ -5,6 +5,7 @@ let influxdb = require('./lib/influxdb');
 let dockerExec = require('./lib/dockerExec.js');
 let monitoring = require('./lib/monitoring.js');
 let Docker = require('dockerode');
+let htmlentities = require('htmlentities');
 let LineStream = require('byline').LineStream;
 
 let util = require('util');
@@ -70,7 +71,7 @@ app.get('/state/:id/:name', async (req, res, next) => {
     return res.send(JSON.stringify(results[req.params.id][req.params.name], null, 4));
 });
 
-app.get('/logs/:name', async (req, res, next) => {
+app.get('/log/:name', async (req, res, next) => {
     try {
         res.send(await globPromise(`log/${req.params.name}/*`));
     } catch (err) {
@@ -78,9 +79,11 @@ app.get('/logs/:name', async (req, res, next) => {
     }
 });
 
-app.get('/logs/:name/:file', async (req, res, next) => {
+app.get('/log/:name/:file', async (req, res, next) => {
     try {
-        res.send(await fs.promises.readFile(`log/${req.params.name}/${req.params.file}`));
+        let content = await fs.promises.readFile(`log/${req.params.name}/${req.params.file}`);
+
+        res.send(`<pre>${htmlentities.encode(content.toString())}</pre>`);
     } catch (err) {
         next(err);
     }

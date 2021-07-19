@@ -132,7 +132,9 @@
                                         <td>{cron.timeout}</td>
                                         <td>
                                             {cron.running ? (
-                                                <span className="badge badge-success">running</span>
+                                                <span className="badge badge-success">
+                                                    running start: {moment(cron.runningdata.start).format('HH:mm:ss')}
+                                                </span>
                                             ) : (
                                                 <span className="badge badge-secondary">next: {moment(cron.nextDate).format('HH:mm:ss')}</span>
                                             )}

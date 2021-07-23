@@ -84,16 +84,14 @@
                 let [logs, setLogs] = useState([]);
                 let [filter, setFilter] = useState({});
 
-                useRecursiveTimeout(() => {
-                    (async () => {
-                        const response = await fetch('/state');
-                        let data = await response.json();
+                useRecursiveTimeout(async () => {
+                    const response = await fetch('/state');
+                    let data = await response.json();
 
-                        // flatten the tree
-                        let results = [];
-                        Object.values(data).map((d) => results.push(...Object.values(d)));
-                        setCrons(results);
-                    })();
+                    // flatten the tree
+                    let results = [];
+                    Object.values(data).map((d) => results.push(...Object.values(d)));
+                    setCrons(results);
                 }, 1000);
 
                 async function getLogs(name) {

@@ -10,10 +10,10 @@ let dockerapi = require('./lib/dockerapi.js');
 
     let data = null;
 
-    // data = await dockerapi.info({
-    //     host: 'localhost',
-    //     timeout: 100000,
-    // });
+    data = await dockerapi.info({
+        host: 'root@raphaelpiccolo.com',
+        timeout: 100000,
+    });
 
     // data = await dockerapi.listTasks({
     //     host: 'localhost',
@@ -62,13 +62,13 @@ let dockerapi = require('./lib/dockerapi.js');
     //     onLine: console.log,
     // });
 
-    data = await dockerapi.exec({
-        host: 'localhost',
-        id: '80a94720d71d',
-        options: { AttachStdin: false, AttachStdout: true, AttachStderr: true, DetachKeys: 'ctrl-p,ctrl-q', Tty: false, Cmd: ['ls', '-la'] },
-        onLine: (line) => console.log('line', line),
-        timeout: 10000,
-    });
+    // data = await dockerapi.exec({
+    //     host: 'localhost',
+    //     id: '80a94720d71d',
+    //     options: { AttachStdin: false, AttachStdout: true, AttachStderr: true, DetachKeys: 'ctrl-p,ctrl-q', Tty: false, Cmd: ['ls', '-la'] },
+    //     onLine: (line) => console.log('line', line),
+    //     timeout: 10000,
+    // });
 
     console.log('run command done');
     console.log(data);

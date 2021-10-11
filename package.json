@@ -1,9 +1,10 @@
 {
     "name": "dockercron",
-    "version": "1.0.54",
+    "version": "1.0.55",
     "description": "register cron jobs in docker labels",
     "main": "server.js",
     "dependencies": {
+        "@babel/eslint-parser": "^7.15.8",
         "@influxdata/influxdb-client": "^1.18.0",
         "byline": "^5.0.0",
         "cors": "^2.8.5",
@@ -17,7 +18,6 @@
         "uniqid": "^5.4.0"
     },
     "devDependencies": {
-        "babel-eslint": "^10.1.0",
         "prettier": "^2.4.1"
     },
     "scripts": {

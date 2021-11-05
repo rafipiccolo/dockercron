@@ -19,3 +19,4 @@ yarn-error.log*
 *.key
 *.p12
 *.p8
+.composer/

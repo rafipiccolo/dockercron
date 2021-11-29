@@ -1,23 +1,28 @@
-let CronJob = require('cron').CronJob;
-let fs = require('fs');
-let moment = require('moment');
-let influxdb = require('./lib/influxdb');
-let monitoring = require('./lib/monitoring.js');
-let dockerapi = require('./lib/dockerapi.js');
-let htmlentities = require('htmlentities');
-let LineStream = require('byline').LineStream;
+import { dirname } from 'path'
+import { fileURLToPath } from 'url';
+const __dirname = dirname(fileURLToPath(import.meta.url));
+import cron from 'cron';
+let CronJob = cron.CronJob;
+import fs from 'fs';
+import moment from 'moment';
+import influxdb from './lib/influxdb.js';
+import monitoring from './lib/monitoring.js';
+import dockerapi from './lib/dockerapi.js';
+import htmlentities from 'htmlentities';
+import byline from 'byline';
+let LineStream = byline.LineStream;
 
-let util = require('util');
-const glob = require('glob');
+import util from 'util';
+import glob from 'glob';
 const globPromise = util.promisify(glob);
 
 fs.mkdirSync('log', { recursive: true });
 
-let cors = require('cors');
-const express = require('express');
+import cors from 'cors';
+import express from 'express';
 const app = express();
 app.set('trust proxy', process.env.TRUST_PROXY ?? 1);
-const http = require('http');
+import http from 'http';
 const server = http.Server(app);
 monitoring.gracefulShutdown(server, app);
 
@@ -119,56 +124,55 @@ server.listen(port, () => {
 
 let crons = {};
 
-(async () => {
-    // ----------
-    // MODE SWARM
-    // ----------
-    if (process.env.SWARM == '1' || process.env.SWARM == 'true') {
-        // list services and create each cron we find
-        const services = await dockerapi.listServices({ timeout: 30000 });
-        for (let service of services) {
-            register(service.ID, service.Spec.Name, service.Spec.Labels);
-        }
-
-        // on service event, recreate all crons of that service
-        const stream = await dockerapi.getEvents({
-            onLine: async (data) => {
-                if (data.Type == 'service') {
-                    if (data.Action == 'create' || data.Action == 'update') {
-                        let servicedata = await dockerapi.getService({ timeout: 30000, id: data.Actor.ID });
-                        register(data.Actor.ID, servicedata.Spec.Name, servicedata.Spec.Labels);
-                    } else if (data.Action == 'remove') {
-                        register(data.Actor.ID);
-                    }
-                }
-            },
-        });
+// ----------
+// MODE SWARM
+// ----------
+if (process.env.SWARM == '1' || process.env.SWARM == 'true') {
+    // list services and create each cron we find
+    const services = await dockerapi.listServices({ timeout: 30000 });
+    for (let service of services) {
+        register(service.ID, service.Spec.Name, service.Spec.Labels);
     }
-    // --------------
-    // MODE NON SWARM
-    // --------------
-    else {
-        // list containers and create each cron we find
-        const containers = await dockerapi.listContainers({ timeout: 30000 });
-        for (let container of containers) {
-            register(container.Id, container.Names[0], container.Labels);
-        }
 
-        // on container event, recreate all crons of that container
-        const stream = await dockerapi.getEvents({
-            onLine: async (data) => {
-                if (data.Type == 'container') {
-                    if (data.Action == 'start') {
-                        let containerdata = await dockerapi.getContainer({ timeout: 30000, id: data.id });
-                        register(data.id, containerdata.Name, containerdata.Config.Labels);
-                    } else if (data.Action == 'die' || data.Action == 'stop') {
-                        register(data.id);
-                    }
+    // on service event, recreate all crons of that service
+    const stream = await dockerapi.getEvents({
+        onLine: async (data) => {
+            if (data.Type == 'service') {
+                if (data.Action == 'create' || data.Action == 'update') {
+                    let servicedata = await dockerapi.getService({ timeout: 30000, id: data.Actor.ID });
+                    register(data.Actor.ID, servicedata.Spec.Name, servicedata.Spec.Labels);
+                } else if (data.Action == 'remove') {
+                    register(data.Actor.ID);
                 }
-            },
-        });
+            }
+        },
+    });
+}
+// --------------
+// MODE NON SWARM
+// --------------
+else {
+    // list containers and create each cron we find
+    const containers = await dockerapi.listContainers({ timeout: 30000 });
+    for (let container of containers) {
+        register(container.Id, container.Names[0], container.Labels);
     }
-})();
+
+    // on container event, recreate all crons of that container
+    const stream = await dockerapi.getEvents({
+        onLine: async (data) => {
+            if (data.Type == 'container') {
+                if (data.Action == 'start') {
+                    let containerdata = await dockerapi.getContainer({ timeout: 30000, id: data.id });
+                    register(data.id, containerdata.Name, containerdata.Config.Labels);
+                } else if (data.Action == 'die' || data.Action == 'stop') {
+                    register(data.id);
+                }
+            }
+        },
+    });
+}
+
 
 //
 // labels from docker compose

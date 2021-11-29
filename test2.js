@@ -1,4 +1,5 @@
-let CronJob = require('cron').CronJob;
+import cron from 'cron';
+let CronJob = cron.CronJob;
 
 let job = new CronJob(
     '* * * * * *',

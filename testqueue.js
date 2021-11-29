@@ -40,8 +40,7 @@ async function createTunnel() {
     console.log('created');
 }
 
-(async () => {
-    createTunnelSafe();
-    createTunnelSafe();
-    createTunnelSafe();
-})();
+createTunnelSafe();
+createTunnelSafe();
+createTunnelSafe();
+

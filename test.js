@@ -1,16 +1,18 @@
-let LineStream = require('byline').LineStream;
-let Docker = require('dockerode');
+import fs from 'fs';
+import byline from 'byline';
+let LineStream = byline.LineStream;
+import Docker from 'dockerode';
 let docker = new Docker({
     protocol: 'ssh',
     host: 'gextra.net',
     port: 22,
     username: 'root',
     sshOptions: {
-        privateKey: require('fs').readFileSync('/root/.ssh/id_rsa'),
+        privateKey: fs.readFileSync('/root/.ssh/id_rsa'),
     },
 });
 
-let dockerExec = require('./lib/dockerExec.js');
+import dockerExec from './lib/dockerExec.js';
 
 // let containerId = '6a844a45c2d5bb4bc916b8bce34961cd4ce981280a5edf6b4bcb60361da3c7c4';
 let containerId = '255830f250b0a834706dbefe2cb3ddeea357916f8db6300f156c7a9640e2db4c';

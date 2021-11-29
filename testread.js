@@ -1,4 +1,4 @@
-const { Transform } = require('stream');
+import { Transform } from 'stream';
 
 function demux() {
     let source = Buffer.from('\x01\x00\x00\x00\x03\x00\x00\x00hi!\x02\x00\x00\x00\x02\x00\x00\x00ho');

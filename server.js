@@ -296,7 +296,6 @@ function createCron(id, cron) {
             cron.runningdata.output = '';
             cron.runningdata.timeout = false;
 
-            let timeouted = false;
             let hrstart = process.hrtime();
             // log output
             try {

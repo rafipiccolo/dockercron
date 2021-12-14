@@ -181,6 +181,16 @@
                                                     >
                                                         close
                                                     </button>
+                                                    <button
+                                                        className="btn btn-success"
+                                                        onClick={async () => {
+                                                            let response = await fetch(`/run/${cron.serviceId}/${cron.name}`)
+                                                            let text = response.text();
+                                                            if (text != 'ok') throw new Error('bad response: ' + text);
+                                                        }}
+                                                    >
+                                                        Run
+                                                    </button>
 
                                                     {logs.map((log) => (
                                                         <div>

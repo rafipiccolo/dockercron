@@ -93,6 +93,15 @@ app.get('/log/:name/:file', async (req, res, next) => {
     }
 });
 
+app.get('/run/:id/:name', async (req, res, next) => {
+    try {
+        runCron(req.params.id, crons[req.params.id][req.params.name]);
+        res.send('ok');
+    } catch (err) {
+        next(err);
+    }
+});
+
 app.get('/data', async (req, res, next) => {
     try {
         let sql = `from(bucket: "bucket")
@@ -241,131 +250,7 @@ function createCron(id, cron) {
     cron.job = new CronJob(
         cron.schedule,
         async () => {
-            verbose(`${cron.name}@${id.substr(0, 8)} exec ${cron.command}`);
-
-            // check if already running for no overlap mode
-            if ((cron['no-overlap'] == 'true' || cron['no-overlap'] == '1') && cron.running) {
-                return verbose(`${cron.name}@${id.substr(0, 8)} skip already running`);
-            }
-
-            // execute
-            let containerIdtoexec = id;
-            let sshconfig = '';
-            try {
-                if (process.env.SWARM == '1' || process.env.SWARM == 'true') {
-                    // get the first task of the service (docker service ps)
-                    const tasks = await dockerapi.listTasks({
-                        timeout: 30000,
-                        filters: {
-                            service: [cron.serviceName],
-                            'desired-state': ['running'],
-                        },
-                    });
-                    let infoforexec = null;
-                    if (tasks.length) {
-                        let task = tasks[0];
-                        const nodedata = await dockerapi.getNode({
-                            timeout: 30000,
-                            id: task.NodeID,
-                        });
-                        // console.log(`try to run on ${cron.serviceName}.${task.Slot}.${task.ID}@${nodedata.Description.Hostname}`);
-                        infoforexec = {
-                            serviceName: cron.serviceName,
-                            slot: task.Slot,
-                            taskId: task.ID,
-                            node: nodedata.Description.Hostname,
-                        };
-                    }
-                    if (!infoforexec) return verbose(`${cron.name}@${id.substr(0, 8)} no running container found`);
-
-                    containerIdtoexec = `${infoforexec.serviceName}.${infoforexec.slot}.${infoforexec.taskId}`;
-
-                    sshconfig = `root@${infoforexec.node}`;
-                }
-            } catch (err) {
-                monitoring.log('error', 'events', `cant get tasks/nodes on ${id} from ${cron.name} : ${err.message}`, { err });
-                return;
-            }
-
-            // TOCHECK créer le tunnel avec sshconfig => utilise la socket dans le exec
-
-            cron.running = 1;
-            cron.runningdata = cron.runningdata || {};
-            cron.runningdata.runon = containerIdtoexec;
-            cron.runningdata.start = new Date();
-            cron.runningdata.output = '';
-            cron.runningdata.timeout = false;
-
-            let hrstart = process.hrtime();
-            // log output
-            try {
-                fs.mkdirSync(`log/${cron.name}`, { recursive: true });
-            } catch (err) {
-                monitoring.log('error', 'dockerExec', `cant create log folder ${err.message}`, { err });
-            }
-            let writeStream = fs.createWriteStream(`log/${cron.name}/${moment().format('YYYY-MM-DD--HH-mm-ss')}`, (err) => {
-                if (err) monitoring.log('error', 'dockerExec', `cant create log file ${err.message}`, { err });
-            });
-
-            // execute
-            try {
-                const data = await dockerapi.exec({
-                    host: sshconfig,
-                    timeout: cron.timeout,
-                    id: containerIdtoexec,
-                    onLine: function (data) {
-                        cron.runningdata.output += data;
-
-                        writeStream.write(data, (err) => {
-                            if (err) monitoring.log('error', 'dockerExec', `cant write logs for stdout ${err.message}`, { err });
-                        });
-                    },
-                    options: {
-                        Cmd: ['sh', '-c', cron.command],
-                        AttachStdin: false,
-                        AttachStdout: true,
-                        AttachStderr: true,
-                        Tty: false,
-                        Env: [],
-                    },
-                });
-
-                cron.runningdata.exitCode = data.ExitCode;
-            } catch (err) {
-                if (err.code == 'TIMEOUT') {
-                    cron.runningdata.timeout = true;
-                } else {
-                    monitoring.log('error', 'events', `cant dockerExec on ${id} ${err.message}`, { err });
-                }
-            }
-
-            let hrend = process.hrtime(hrstart);
-            cron.runningdata.ms = hrend[0] * 1000 + hrend[1] / 1000000;
-            cron.runningdata.end = new Date();
-            cron.running = 0;
-            cron.nextDate = cron.job.nextDates();
-
-            let smallcontainerId = containerIdtoexec.includes('.') ? containerIdtoexec : containerIdtoexec.substr(0, 8);
-            console.log(
-                `${cron.name}@${smallcontainerId} ms: ${cron.runningdata.ms} timeout: ${cron.runningdata.timeout ? 1 : 0} exitCode: ${
-                    cron.runningdata.exitCode
-                } output: ${(cron.runningdata.output || '').trim()}`
-            );
-
-            writeStream.end(`\n\nms: ${cron.runningdata.ms} timeout: ${cron.runningdata.timeout ? 1 : 0} exitCode: ${cron.runningdata.exitCode}`);
-
-            influxdb.insert(
-                'dockercron',
-                { hostname: process.env.HOSTNAME, cronname: cron.name },
-                { exitCode: cron.runningdata.exitCode, timeout: cron.runningdata.timeout ? 1 : 0, ms: cron.runningdata.ms }
-            );
-
-            // console.log(
-            //     'influxdb',
-            //     'dockercron',
-            //     { hostname: process.env.HOSTNAME, cronname: cron.name },
-            //     { exitCode: cron.runningdata.exitCode, timeout: cron.runningdata.timeout, ms: cron.runningdata.ms }
-            // );
+            return await runCron(id, cron);
         },
         null,
         true,
@@ -374,6 +259,127 @@ function createCron(id, cron) {
 
     cron.job.start();
     cron.nextDate = cron.job.nextDates();
+}
+
+async function runCron(id, cron) {
+    verbose(`${cron.name}@${id.substr(0, 8)} exec ${cron.command}`);
+
+    // check if already running for no overlap mode
+    if ((cron['no-overlap'] == 'true' || cron['no-overlap'] == '1') && cron.running) {
+        return verbose(`${cron.name}@${id.substr(0, 8)} skip already running`);
+    }
+
+    cron.running = 1;
+
+    // execute
+    let containerIdtoexec = id;
+    let sshconfig = '';
+    try {
+        if (process.env.SWARM == '1' || process.env.SWARM == 'true') {
+            // get the first task of the service (docker service ps)
+            const tasks = await dockerapi.listTasks({
+                timeout: 30000,
+                filters: {
+                    service: [cron.serviceName],
+                    'desired-state': ['running'],
+                },
+            });
+            let infoforexec = null;
+            if (tasks.length) {
+                let task = tasks[0];
+                const nodedata = await dockerapi.getNode({
+                    timeout: 30000,
+                    id: task.NodeID,
+                });
+                // console.log(`try to run on ${cron.serviceName}.${task.Slot}.${task.ID}@${nodedata.Description.Hostname}`);
+                infoforexec = {
+                    serviceName: cron.serviceName,
+                    slot: task.Slot,
+                    taskId: task.ID,
+                    node: nodedata.Description.Hostname,
+                };
+            }
+            if (!infoforexec) return verbose(`${cron.name}@${id.substr(0, 8)} no running container found`);
+
+            containerIdtoexec = `${infoforexec.serviceName}.${infoforexec.slot}.${infoforexec.taskId}`;
+
+            sshconfig = `root@${infoforexec.node}`;
+        }
+    } catch (err) {
+        monitoring.log('error', 'events', `cant get tasks/nodes on ${id} from ${cron.name} : ${err.message}`, { err });
+        return;
+    }
+
+    // TOCHECK créer le tunnel avec sshconfig => utilise la socket dans le exec
+
+    cron.runningdata = cron.runningdata || {};
+    cron.runningdata.runon = containerIdtoexec;
+    cron.runningdata.start = new Date();
+    cron.runningdata.output = '';
+    cron.runningdata.timeout = false;
+
+    let hrstart = process.hrtime();
+    // log output
+    try {
+        fs.mkdirSync(`log/${cron.name}`, { recursive: true });
+    } catch (err) {
+        monitoring.log('error', 'dockerExec', `cant create log folder ${err.message}`, { err });
+    }
+    let writeStream = fs.createWriteStream(`log/${cron.name}/${moment().format('YYYY-MM-DD--HH-mm-ss')}`, (err) => {
+        if (err) monitoring.log('error', 'dockerExec', `cant create log file ${err.message}`, { err });
+    });
+
+    // execute
+    try {
+        const data = await dockerapi.exec({
+            host: sshconfig,
+            timeout: cron.timeout,
+            id: containerIdtoexec,
+            onLine: function (data) {
+                cron.runningdata.output += data;
+
+                writeStream.write(data, (err) => {
+                    if (err) monitoring.log('error', 'dockerExec', `cant write logs for stdout ${err.message}`, { err });
+                });
+            },
+            options: {
+                Cmd: ['sh', '-c', cron.command],
+                AttachStdin: false,
+                AttachStdout: true,
+                AttachStderr: true,
+                Tty: false,
+                Env: [],
+            },
+        });
+
+        cron.runningdata.exitCode = data.ExitCode;
+    } catch (err) {
+        if (err.code == 'TIMEOUT') {
+            cron.runningdata.timeout = true;
+        } else {
+            monitoring.log('error', 'events', `cant dockerExec on ${id} ${err.message}`, { err });
+        }
+    }
+
+    let hrend = process.hrtime(hrstart);
+    cron.runningdata.ms = hrend[0] * 1000 + hrend[1] / 1000000;
+    cron.runningdata.end = new Date();
+    cron.running = 0;
+    cron.nextDate = cron.job.nextDates();
+
+    let smallcontainerId = containerIdtoexec.includes('.') ? containerIdtoexec : containerIdtoexec.substr(0, 8);
+    console.log(
+        `${cron.name}@${smallcontainerId} ms: ${cron.runningdata.ms} timeout: ${cron.runningdata.timeout ? 1 : 0} exitCode: ${cron.runningdata.exitCode
+        } output: ${(cron.runningdata.output || '').trim()}`
+    );
+
+    writeStream.end(`\n\nms: ${cron.runningdata.ms} timeout: ${cron.runningdata.timeout ? 1 : 0} exitCode: ${cron.runningdata.exitCode}`);
+
+    influxdb.insert(
+        'dockercron',
+        { hostname: process.env.HOSTNAME, cronname: cron.name },
+        { exitCode: cron.runningdata.exitCode, timeout: cron.runningdata.timeout ? 1 : 0, ms: cron.runningdata.ms }
+    );
 }
 
 function removeAllCronsForContainer(id) {

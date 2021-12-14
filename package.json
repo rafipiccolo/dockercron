@@ -1,6 +1,6 @@
 {
     "name": "dockercron",
-    "version": "1.0.63",
+    "version": "1.0.64",
     "description": "register cron jobs in docker labels",
     "main": "server.js",
     "dependencies": {
@@ -20,7 +20,7 @@
     "devDependencies": {
         "eslint-plugin-node": "^11.1.0",
         "eslint-plugin-sonarjs": "^0.11.0",
-        "prettier": "^2.5.0"
+        "prettier": "^2.5.1"
     },
     "scripts": {
         "start": "node server.js"

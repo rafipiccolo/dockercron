@@ -1,4 +1,4 @@
-import { dirname } from 'path'
+import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 import cron from 'cron';
@@ -181,7 +181,6 @@ else {
         },
     });
 }
-
 
 //
 // labels from docker compose
@@ -369,7 +368,8 @@ async function runCron(id, cron) {
 
     let smallcontainerId = containerIdtoexec.includes('.') ? containerIdtoexec : containerIdtoexec.substr(0, 8);
     console.log(
-        `${cron.name}@${smallcontainerId} ms: ${cron.runningdata.ms} timeout: ${cron.runningdata.timeout ? 1 : 0} exitCode: ${cron.runningdata.exitCode
+        `${cron.name}@${smallcontainerId} ms: ${cron.runningdata.ms} timeout: ${cron.runningdata.timeout ? 1 : 0} exitCode: ${
+            cron.runningdata.exitCode
         } output: ${(cron.runningdata.output || '').trim()}`
     );
 

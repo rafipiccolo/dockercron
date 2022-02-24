@@ -1,4 +1,4 @@
-import { dirname } from 'path'
+import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 import dockerapi from './lib/dockerapi.js';
@@ -76,4 +76,3 @@ console.log('run command done');
 console.log(data);
 
 process.exit(0);
-

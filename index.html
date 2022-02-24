@@ -184,7 +184,7 @@
                                                     <button
                                                         className="btn btn-success"
                                                         onClick={async () => {
-                                                            let response = await fetch(`/run/${cron.serviceId}/${cron.name}`)
+                                                            let response = await fetch(`/run/${cron.serviceId}/${cron.name}`);
                                                             let text = await response.text();
                                                             if (text != 'ok') throw new Error('bad response: ' + text);
                                                         }}

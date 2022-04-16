@@ -1,6 +1,6 @@
 {
     "name": "dockercron",
-    "version": "1.0.92",
+    "version": "1.0.93",
     "description": "register cron jobs in docker labels",
     "main": "server.js",
     "dependencies": {
@@ -25,7 +25,7 @@
         "eslint-plugin-sonarjs": "^0.13.0",
         "html-validate": "^6.7.1",
         "husky": "^7.0.4",
-        "lint-staged": "^12.3.7",
+        "lint-staged": "^12.3.8",
         "prettier": "^2.6.2"
     },
     "scripts": {

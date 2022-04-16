@@ -114,6 +114,7 @@
                                     <th style={{ width: 100 }}>schedule</th>
                                     <th style={{ width: 100 }}>timeout</th>
                                     <th style={{ width: 100 }}>running</th>
+                                    <th style={{ width: 100 }}>disabled</th>
                                     <th style={{ width: 150 }}>actions</th>
                                 </tr>
                                 {crons.map((cron) => (
@@ -139,6 +140,13 @@
                                                 </>
                                             ) : (
                                                 <span className="badge badge-secondary">next: {moment(cron.nextDate).format('HH:mm:ss')}</span>
+                                            )}
+                                        </td>
+                                        <td>
+                                            {cron.disabled ? (
+                                                <span className="badge badge-success">disabled</span>
+                                            ) : (
+                                                <span className="badge badge-secondary">enabled</span>
                                             )}
                                         </td>
                                         <td>
@@ -191,6 +199,29 @@
                                                     >
                                                         Run
                                                     </button>
+                                                    {cron.disabled ? (
+                                                        <button
+                                                            className="btn btn-success"
+                                                            onClick={async () => {
+                                                                let response = await fetch(`/enable/${cron.serviceId}/${cron.name}`);
+                                                                let text = await response.text();
+                                                                if (text != 'ok') throw new Error('bad response: ' + text);
+                                                            }}
+                                                        >
+                                                            Enable
+                                                        </button>
+                                                    ) : (
+                                                        <button
+                                                            className="btn btn-success"
+                                                            onClick={async () => {
+                                                                let response = await fetch(`/disable/${cron.serviceId}/${cron.name}`);
+                                                                let text = await response.text();
+                                                                if (text != 'ok') throw new Error('bad response: ' + text);
+                                                            }}
+                                                        >
+                                                            Disable
+                                                        </button>
+                                                    )}
 
                                                     {logs.map((log) => (
                                                         <div>

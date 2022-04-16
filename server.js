@@ -102,6 +102,24 @@ app.get('/run/:id/:name', async (req, res, next) => {
     }
 });
 
+app.get('/disable/:id/:name', async (req, res, next) => {
+    try {
+        crons[req.params.id][req.params.name].disabled = true;
+        res.send('ok');
+    } catch (err) {
+        next(err);
+    }
+});
+
+app.get('/enable/:id/:name', async (req, res, next) => {
+    try {
+        crons[req.params.id][req.params.name].disabled = false;
+        res.send('ok');
+    } catch (err) {
+        next(err);
+    }
+});
+
 app.get('/data', async (req, res, next) => {
     try {
         let sql = `from(bucket: "bucket")
@@ -266,6 +284,10 @@ async function runCron(id, cron) {
     // check if already running for no overlap mode
     if ((cron['no-overlap'] == 'true' || cron['no-overlap'] == '1') && cron.running) {
         return verbose(`${cron.name}@${id.substr(0, 8)} skip already running`);
+    }
+
+    if (cron.disabled) {
+        return verbose(`${cron.name}@${id.substr(0, 8)} skip because disabled`);
     }
 
     cron.running = 1;

@@ -1,13 +1,13 @@
 {
     "name": "dockercron",
-    "version": "1.0.98",
+    "version": "1.0.99",
     "description": "register cron jobs in docker labels",
     "main": "server.js",
     "dependencies": {
         "@influxdata/influxdb-client": "^1.25.0",
         "byline": "^5.0.0",
         "cors": "^2.8.5",
-        "cron": "^1.8.3",
+        "cron": "^2.0.0",
         "dockerode": "^3.3.1",
         "express": "^4.18.1",
         "glob": "^8.0.1",

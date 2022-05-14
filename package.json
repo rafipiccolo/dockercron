@@ -1,6 +1,6 @@
 {
     "name": "dockercron",
-    "version": "1.0.101",
+    "version": "1.0.102",
     "description": "register cron jobs in docker labels",
     "main": "server.js",
     "dependencies": {
@@ -10,7 +10,7 @@
         "cron": "^2.0.0",
         "dockerode": "^3.3.1",
         "express": "^4.18.1",
-        "glob": "^8.0.1",
+        "glob": "^8.0.3",
         "htmlentities": "^1.0.0",
         "moment": "^2.29.3",
         "pretty-ms": "^7.0.1",

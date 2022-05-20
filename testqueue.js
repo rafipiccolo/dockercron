@@ -32,7 +32,7 @@ function queue(func, delayms) {
     return xxx;
 }
 
-let createTunnelSafe = queue(createTunnel);
+const createTunnelSafe = queue(createTunnel);
 
 async function createTunnel() {
     console.log('creating');

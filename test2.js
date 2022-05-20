@@ -1,7 +1,7 @@
 import cron from 'cron';
-let CronJob = cron.CronJob;
+const CronJob = cron.CronJob;
 
-let job = new CronJob(
+const job = new CronJob(
     '* * * * * *',
     async () => {
         console.log(new Date(), 'ok');

@@ -2,7 +2,7 @@ import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 import cron from 'cron';
-let CronJob = cron.CronJob;
+const CronJob = cron.CronJob;
 import fs from 'fs';
 import moment from 'moment';
 import influxdb from './lib/influxdb.js';
@@ -10,7 +10,7 @@ import monitoring from './lib/monitoring.js';
 import dockerapi from './lib/dockerapi.js';
 import htmlentities from 'htmlentities';
 import byline from 'byline';
-let LineStream = byline.LineStream;
+const LineStream = byline.LineStream;
 
 import util from 'util';
 import glob from 'glob';
@@ -43,13 +43,13 @@ app.get('/', async (req, res, next) => {
 });
 
 function getCleanCrons() {
-    let results = {};
+    const results = {};
 
-    for (let id in crons) {
+    for (const id in crons) {
         results[id] = {};
-        for (let name in crons[id]) {
+        for (const name in crons[id]) {
             results[id][name] = {};
-            for (let field in crons[id][name]) {
+            for (const field in crons[id][name]) {
                 if (field == 'job') continue;
 
                 results[id][name][field] = crons[id][name][field];
@@ -61,17 +61,17 @@ function getCleanCrons() {
 }
 
 app.get('/state', async (req, res, next) => {
-    let results = getCleanCrons();
+    const results = getCleanCrons();
     return res.send(JSON.stringify(results, null, 4));
 });
 
 app.get('/state/:id', async (req, res, next) => {
-    let results = getCleanCrons();
+    const results = getCleanCrons();
     return res.send(JSON.stringify(results[req.params.id], null, 4));
 });
 
 app.get('/state/:id/:name', async (req, res, next) => {
-    let results = getCleanCrons();
+    const results = getCleanCrons();
     return res.send(JSON.stringify(results[req.params.id][req.params.name], null, 4));
 });
 
@@ -85,7 +85,7 @@ app.get('/log/:name', async (req, res, next) => {
 
 app.get('/log/:name/:file', async (req, res, next) => {
     try {
-        let content = await fs.promises.readFile(`log/${req.params.name}/${req.params.file}`);
+        const content = await fs.promises.readFile(`log/${req.params.name}/${req.params.file}`);
 
         res.send(`<pre>${htmlentities.encode(content.toString())}</pre>`);
     } catch (err) {
@@ -122,7 +122,7 @@ app.get('/enable/:id/:name', async (req, res, next) => {
 
 app.get('/data', async (req, res, next) => {
     try {
-        let sql = `from(bucket: "bucket")
+        const sql = `from(bucket: "bucket")
         |> range(start: -5m)
         |> filter(fn: (r) => r["_measurement"] == "dockercron")
         ${parseInt(req.query.error) ? '|> filter(fn: (r) => r["_field"] == "exitCode" and r["_value"] != 0)' : ''}
@@ -130,7 +130,7 @@ app.get('/data', async (req, res, next) => {
         |> sort(columns:["_time"], desc: true)
         |> limit(n:1000)`;
 
-        let data = await influxdb.query(sql);
+        const data = await influxdb.query(sql);
         res.send(data);
     } catch (err) {
         next(err);
@@ -149,7 +149,7 @@ server.listen(port, () => {
     console.log(`ready to go on ${port}`);
 });
 
-let crons = {};
+const crons = {};
 
 // ----------
 // MODE SWARM
@@ -157,7 +157,7 @@ let crons = {};
 if (process.env.SWARM == '1' || process.env.SWARM == 'true') {
     // list services and create each cron we find
     const services = await dockerapi.listServices({ timeout: 30000 });
-    for (let service of services) {
+    for (const service of services) {
         register(service.ID, service.Spec.Name, service.Spec.Labels);
     }
 
@@ -166,7 +166,7 @@ if (process.env.SWARM == '1' || process.env.SWARM == 'true') {
         onLine: async (data) => {
             if (data.Type == 'service') {
                 if (data.Action == 'create' || data.Action == 'update') {
-                    let servicedata = await dockerapi.getService({ timeout: 30000, id: data.Actor.ID });
+                    const servicedata = await dockerapi.getService({ timeout: 30000, id: data.Actor.ID });
                     register(data.Actor.ID, servicedata.Spec.Name, servicedata.Spec.Labels);
                 } else if (data.Action == 'remove') {
                     register(data.Actor.ID);
@@ -181,7 +181,7 @@ if (process.env.SWARM == '1' || process.env.SWARM == 'true') {
 else {
     // list containers and create each cron we find
     const containers = await dockerapi.listContainers({ timeout: 30000 });
-    for (let container of containers) {
+    for (const container of containers) {
         register(container.Id, container.Names[0], container.Labels);
     }
 
@@ -190,7 +190,7 @@ else {
         onLine: async (data) => {
             if (data.Type == 'container') {
                 if (data.Action == 'start') {
-                    let containerdata = await dockerapi.getContainer({ timeout: 30000, id: data.id });
+                    const containerdata = await dockerapi.getContainer({ timeout: 30000, id: data.id });
                     register(data.id, containerdata.Name, containerdata.Config.Labels);
                 } else if (data.Action == 'die' || data.Action == 'stop') {
                     register(data.id);
@@ -233,13 +233,13 @@ function register(id, name, labels) {
 
     // parse all crons of this container
     let nb = 0;
-    for (let label in labels) {
-        let value = labels[label];
+    for (const label in labels) {
+        const value = labels[label];
 
-        let m = label.match(/^cron\.([a-z0-9]+)\.([a-z\-]+)$/i);
+        const m = label.match(/^cron\.([a-z0-9]+)\.([a-z\-]+)$/i);
         if (m) {
-            let cronname = m[1];
-            let option = m[2];
+            const cronname = m[1];
+            const option = m[2];
             crons[id] = crons[id] || {};
             crons[id][cronname] = crons[id][cronname] || {};
             crons[id][cronname][option] = value;
@@ -253,7 +253,7 @@ function register(id, name, labels) {
     verbose(`${id.substr(0, 8)} found ${nb} cronjobs`);
 
     // create all detected crons
-    for (let name in crons[id]) {
+    for (const name in crons[id]) {
         createCron(id, crons[id][name]);
     }
 }
@@ -307,7 +307,7 @@ async function runCron(id, cron) {
             });
             let infoforexec = null;
             if (tasks.length) {
-                let task = tasks[0];
+                const task = tasks[0];
                 const nodedata = await dockerapi.getNode({
                     timeout: 30000,
                     id: task.NodeID,
@@ -339,14 +339,14 @@ async function runCron(id, cron) {
     cron.runningdata.output = '';
     cron.runningdata.timeout = false;
 
-    let hrstart = process.hrtime();
+    const hrstart = process.hrtime();
     // log output
     try {
         fs.mkdirSync(`log/${cron.name}`, { recursive: true });
     } catch (err) {
         monitoring.log('error', 'dockerExec', `cant create log folder ${err.message}`, { err });
     }
-    let writeStream = fs.createWriteStream(`log/${cron.name}/${moment().format('YYYY-MM-DD--HH-mm-ss')}`, (err) => {
+    const writeStream = fs.createWriteStream(`log/${cron.name}/${moment().format('YYYY-MM-DD--HH-mm-ss')}`, (err) => {
         if (err) monitoring.log('error', 'dockerExec', `cant create log file ${err.message}`, { err });
     });
 
@@ -382,13 +382,13 @@ async function runCron(id, cron) {
         }
     }
 
-    let hrend = process.hrtime(hrstart);
+    const hrend = process.hrtime(hrstart);
     cron.runningdata.ms = hrend[0] * 1000 + hrend[1] / 1000000;
     cron.runningdata.end = new Date();
     cron.running = 0;
     cron.nextDate = cron.job.nextDates();
 
-    let smallcontainerId = containerIdtoexec.includes('.') ? containerIdtoexec : containerIdtoexec.substr(0, 8);
+    const smallcontainerId = containerIdtoexec.includes('.') ? containerIdtoexec : containerIdtoexec.substr(0, 8);
     console.log(
         `${cron.name}@${smallcontainerId} ms: ${cron.runningdata.ms} timeout: ${cron.runningdata.timeout ? 1 : 0} exitCode: ${
             cron.runningdata.exitCode
@@ -405,8 +405,8 @@ async function runCron(id, cron) {
 }
 
 function removeAllCronsForContainer(id) {
-    for (let name in crons[id]) {
-        let cron = crons[id][name];
+    for (const name in crons[id]) {
+        const cron = crons[id][name];
         if (cron.job) cron.job.stop();
         delete crons[id][name];
     }

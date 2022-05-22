@@ -32,6 +32,7 @@ app.get('/favicon.ico', (req, res, next) => {
 
 app.use(cors());
 
+app.use(monitoring.banmiddleware(app));
 app.use(monitoring.idmiddleware);
 app.use(monitoring.statmiddleware);
 app.use(monitoring.logmiddleware);

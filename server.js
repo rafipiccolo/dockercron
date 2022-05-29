@@ -26,12 +26,9 @@ import http from 'http';
 const server = http.Server(app);
 monitoring.gracefulShutdown(server, app);
 
-app.get('/favicon.ico', (req, res, next) => {
-    res.sendFile(`${__dirname}/web/img/favicon.png`);
-});
-
 app.use(cors());
 
+app.use(monitoring.faviconmiddleware(app));
 app.use(monitoring.banmiddleware(app));
 app.use(monitoring.idmiddleware);
 app.use(monitoring.statmiddleware);

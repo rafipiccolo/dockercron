@@ -57,15 +57,15 @@ The job called "test" will execute the command "echo hi" every second.
 
 start it
 
-    docker-compose up -d
+    docker compose up -d
 
 # Update
 
     cd dockercron
     git pull
     cd ..
-    docker-compose build dockercron
-    docker-compose up -d dockercron
+    docker compose build dockercron
+    docker compose up -d dockercron
 
 # Config
 

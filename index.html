@@ -59,13 +59,13 @@
             function Modal(props) {
                 useEffect(() => {
                     const close = (e) => {
-                        if(e.keyCode === 27){
-                            props.onClose()
+                        if (e.keyCode === 27) {
+                            props.onClose();
                         }
-                    }
-                    window.addEventListener('keydown', close)
-                    return () => window.removeEventListener('keydown', close)
-                },[])
+                    };
+                    window.addEventListener('keydown', close);
+                    return () => window.removeEventListener('keydown', close);
+                }, []);
                 return (
                     <div className="modal fade show" role="dialog" style={{ display: 'block' }}>
                         <div className="modal-dialog modal-xl modal-dialog-scrollable" role="document">

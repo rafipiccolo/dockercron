@@ -1,6 +1,6 @@
 {
     "name": "dockercron",
-    "version": "1.0.147",
+    "version": "1.0.148",
     "description": "register cron jobs in docker labels",
     "main": "server.js",
     "dependencies": {

@@ -1,6 +1,6 @@
-import { dirname } from 'path';
+import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import cron from 'cron';
 const CronJob = cron.CronJob;
 import fs from 'fs';
@@ -224,7 +224,7 @@ else {
 //   the service Name or the containerName
 //
 function register(id, name, labels) {
-    labels = labels || {};
+    labels ||= {};
 
     // remove all crons of this container
     removeAllCronsForContainer(id);
@@ -238,8 +238,8 @@ function register(id, name, labels) {
         if (m) {
             const cronname = m[1];
             const option = m[2];
-            crons[id] = crons[id] || {};
-            crons[id][cronname] = crons[id][cronname] || {};
+            crons[id] ||= {};
+            crons[id][cronname] ||= {};
             crons[id][cronname][option] = value;
             crons[id][cronname].serviceId = id;
             crons[id][cronname].serviceName = name;
@@ -331,7 +331,7 @@ async function runCron(id, cron) {
 
     // TOCHECK créer le tunnel avec sshconfig => utilise la socket dans le exec
 
-    cron.runningdata = cron.runningdata || {};
+    cron.runningdata ||= {};
     cron.runningdata.runon = containerIdtoexec;
     cron.runningdata.start = new Date();
     cron.runningdata.output = '';

@@ -1,6 +1,4 @@
-function delay(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-}
+import delay from './lib/delay.js';
 
 // var active = false;
 // async function createTunnelSafe() {
@@ -19,7 +17,7 @@ function queue(func, delayms) {
     let active = false;
     async function xxx() {
         while (active) {
-            await new Promise((resolve) => setTimeout(resolve, delayms || 0));
+            await delay(delayms || 0);
         }
 
         active = true;

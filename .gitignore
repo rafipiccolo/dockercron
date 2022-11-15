@@ -21,3 +21,4 @@ yarn-error.log*
 *.p8
 .composer/
 .php-cs-fixer.cache
+.twig-cs-fixer.cache

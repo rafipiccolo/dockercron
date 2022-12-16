@@ -1,7 +1,7 @@
 import { Transform } from 'stream';
 
 function demux() {
-    const source = Buffer.from('\x01\x00\x00\x00\x03\x00\x00\x00hi!\x02\x00\x00\x00\x02\x00\x00\x00ho');
+    const source = Buffer.from('\u0001\u0000\u0000\u0000\u0003\u0000\u0000\u0000hi!\u0002\u0000\u0000\u0000\u0002\u0000\u0000\u0000ho');
 
     const stdout = new Transform({
         transform(chunk, encoding, callback) {

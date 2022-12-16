@@ -14,7 +14,7 @@ let data = null;
 
 data = await dockerapi.info({
     host: 'root@raphaelpiccolo.com',
-    timeout: 100000,
+    timeout: 100_000,
 });
 
 // data = await dockerapi.listTasks({

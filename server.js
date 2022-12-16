@@ -154,7 +154,7 @@ const crons = {};
 // ----------
 if (process.env.SWARM == '1' || process.env.SWARM == 'true') {
     // list services and create each cron we find
-    const services = await dockerapi.listServices({ timeout: 30000 });
+    const services = await dockerapi.listServices({ timeout: 30_000 });
     for (const service of services) {
         register(service.ID, service.Spec.Name, service.Spec.Labels);
     }
@@ -164,7 +164,7 @@ if (process.env.SWARM == '1' || process.env.SWARM == 'true') {
         onLine: async (data) => {
             if (data.Type == 'service') {
                 if (data.Action == 'create' || data.Action == 'update') {
-                    const servicedata = await dockerapi.getService({ timeout: 30000, id: data.Actor.ID });
+                    const servicedata = await dockerapi.getService({ timeout: 30_000, id: data.Actor.ID });
                     register(data.Actor.ID, servicedata.Spec.Name, servicedata.Spec.Labels);
                 } else if (data.Action == 'remove') {
                     register(data.Actor.ID);
@@ -178,7 +178,7 @@ if (process.env.SWARM == '1' || process.env.SWARM == 'true') {
 // --------------
 else {
     // list containers and create each cron we find
-    const containers = await dockerapi.listContainers({ timeout: 30000 });
+    const containers = await dockerapi.listContainers({ timeout: 30_000 });
     for (const container of containers) {
         register(container.Id, container.Names[0], container.Labels);
     }
@@ -188,7 +188,7 @@ else {
         onLine: async (data) => {
             if (data.Type == 'container') {
                 if (data.Action == 'start') {
-                    const containerdata = await dockerapi.getContainer({ timeout: 30000, id: data.id });
+                    const containerdata = await dockerapi.getContainer({ timeout: 30_000, id: data.id });
                     register(data.id, containerdata.Name, containerdata.Config.Labels);
                 } else if (data.Action == 'die' || data.Action == 'stop') {
                     register(data.id);
@@ -297,7 +297,7 @@ async function runCron(id, cron) {
         if (process.env.SWARM == '1' || process.env.SWARM == 'true') {
             // get the first task of the service (docker service ps)
             const tasks = await dockerapi.listTasks({
-                timeout: 30000,
+                timeout: 30_000,
                 filters: {
                     service: [cron.serviceName],
                     'desired-state': ['running'],
@@ -307,7 +307,7 @@ async function runCron(id, cron) {
             if (tasks.length) {
                 const task = tasks[0];
                 const nodedata = await dockerapi.getNode({
-                    timeout: 30000,
+                    timeout: 30_000,
                     id: task.NodeID,
                 });
                 // console.log(`try to run on ${cron.serviceName}.${task.Slot}.${task.ID}@${nodedata.Description.Hostname}`);
@@ -381,7 +381,7 @@ async function runCron(id, cron) {
     }
 
     const hrend = process.hrtime(hrstart);
-    cron.runningdata.ms = hrend[0] * 1000 + hrend[1] / 1000000;
+    cron.runningdata.ms = hrend[0] * 1000 + hrend[1] / 1_000_000;
     cron.runningdata.end = new Date();
     cron.running = 0;
     cron.nextDate = cron.job.nextDates();
